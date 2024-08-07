@@ -5,7 +5,7 @@ import javax.swing.Timer
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 
-class CopyActionListener(private val button: JButton, private val textProvider: () -> String) : java.awt.event.ActionListener {
+class CopyTextActionListener(private val button: JButton, private val textProvider: () -> String) : java.awt.event.ActionListener {
     private var timer: Timer? = null
 
     override fun actionPerformed(e: java.awt.event.ActionEvent?) {
