@@ -1,0 +1,34 @@
+<!-- 플러그인 구성 파일. 자세한 내용: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+  <!-- 플러그인의 고유 식별자. FQN 형식이어야 하며, 플러그인 버전 간에 변경할 수 없습니다. -->
+  <id>com.github.rungeun.kcj.kotlin-code-judge</id>
+
+  <!-- 공개 플러그인 이름. Title Case로 작성해야 합니다.
+       가이드라인: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+  <name>KCJ: Kotlin Code Judge</name>
+
+  <!-- 플러그인 페이지에 표시되는 공급자 이름 또는 조직 ID. -->
+  <vendor email="c9h13no3addicted@gmail.com" url="https://github.com/rungeun">RunGeun</vendor>
+
+  <!-- 플러그인 페이지 및 IDE 플러그인 관리자에 표시되는 플러그인 설명.
+       <![CDATA[ ]]> 태그 내에 간단한 HTML 요소(텍스트 형식, 단락 및 목록)를 추가할 수 있습니다.
+       가이드라인: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+  <description><![CDATA[
+    여기에 플러그인에 대한 간단한 설명을 입력하세요.<br>
+    <em>대부분의 HTML 태그를 사용할 수 있습니다</em>
+  ]]></description>
+
+  <!-- 제품 및 플러그인 호환성 요구 사항.
+       자세한 내용: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+  <depends>com.intellij.modules.platform</depends>
+
+  <!-- 플러그인에서 정의한 확장 포인트.
+       자세한 내용: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- 도구 창 확장 포인트 등록 -->
+    <toolWindow id="KCJ: Kotlin Code Judge"
+                anchor="left"
+                factoryClass="com.github.rungeun.kcj.kotlincodejudge.MyToolWindowFactory"
+                icon="/META-INF/pluginIcon.svg"/>
+  </extensions>
+</idea-plugin>
