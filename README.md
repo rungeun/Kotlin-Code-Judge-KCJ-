@@ -13,9 +13,15 @@
 
 ### 2024.08.08
 - TC IN/OUT/ERROR COPY 기능
-
+- Delete 버튼 기능 구현
+- Copy TestCase 버튼 기능 구현
 
 ## 예정
+- TC창 축소
+    - 테스트케이스 생성시 Answer탭과 Cerr탭을 비활성화 해둠(display: none)
+    - Run버튼, Some Run버튼을 눌렀을 경우 활성화, (display)
+    - Run버튼, Some Run버튼을 눌렀을 경우 `#실행 후 결과`로 화면을 완전히 축소, In,Out,Answer,Cerr탭은 폴드 상태이며 버튼을 통해 펼칠 수 있도록 
+
 - 각 객체의 In,Out,Answer,Cerr를 json으로 저장
 - 아이콘 변경
 - 설정 파일

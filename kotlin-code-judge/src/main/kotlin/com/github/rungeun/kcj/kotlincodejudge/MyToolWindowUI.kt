@@ -39,6 +39,9 @@ class MyToolWindowUI {
         row2Panel.isOpaque = false
         val donateButton = JButton("Give coffee :>")
         val guideButton = JButton("Guide")
+        donateButton.addActionListener(GiveCoffeeActionListener())
+        guideButton.addActionListener(GuideActionListener())
+
 
         row2Panel.add(donateButton)
         row2Panel.add(guideButton)
