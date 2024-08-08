@@ -21,8 +21,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
         private val ioHeight = 60
         private val ioWidth = 120
 
-        fun addNewTestCasePanel(contentPanel: JPanel) {
-            // 새로운 테스트 케이스 패널 생성
+        fun addNewTestCasePanel(contentPanel: JPanel, inputText: String = "", outputText: String = "") {
             val newTestCasePanel = JPanel()
             newTestCasePanel.layout = BoxLayout(newTestCasePanel, BoxLayout.Y_AXIS)
             newTestCasePanel.border = BorderFactory.createTitledBorder("TestCase")
@@ -36,8 +35,8 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
 
             // 새로운 테스트 케이스 레이아웃 추가
             newTestCasePanel.add(createTestCaseRow1Panel(testCaseCount, newTestCasePanel, contentPanel))
-            newTestCasePanel.add(createInputTextPanel())
-            newTestCasePanel.add(createOutputTextPanel())
+            newTestCasePanel.add(createInputTextPanel(inputText))
+            newTestCasePanel.add(createOutputTextPanel(outputText))
             newTestCasePanel.add(createAnswerTextPanel())
             newTestCasePanel.add(createErrorTextPanel())
 
@@ -54,7 +53,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             testCaseRow1Panel.layout = BoxLayout(testCaseRow1Panel, BoxLayout.X_AXIS)
             testCaseRow1Panel.isOpaque = false
             val testCaseLabel = JLabel("UTC $testCaseNumber") // 번호를 변수로 변경
-            val addTestCaseButton = JButton("Copy TestCase")
+            val copyTestCaseButton = JButton("Copy TestCase")
             val deleteTestCaseButton = JButton("Delete")
 
             // Delete 버튼에 액션 리스너 추가
@@ -74,7 +73,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
 
             testCaseRow1Panel.add(testCaseLabel)
             testCaseRow1Panel.add(Box.createHorizontalGlue()) // 공백 추가
-            testCaseRow1Panel.add(addTestCaseButton)
+            testCaseRow1Panel.add(copyTestCaseButton)
             testCaseRow1Panel.add(deleteTestCaseButton)
 
             return testCaseRow1Panel
@@ -89,7 +88,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
         }
 
         // Row 2와 3: 입력 라벨, Copy 버튼, 입력 텍스트 영역
-        private fun createInputTextPanel(): JPanel {
+        private fun createInputTextPanel(inputText: String = ""): JPanel {
             val panel = JPanel()
             panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
 
@@ -109,6 +108,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             val inputTextArea = JTextArea(3, 5) // 3줄 높이, 5열 너비의 텍스트 영역
             inputTextArea.lineWrap = true // 자동 줄바꿈 설정
             inputTextArea.wrapStyleWord = true // 단어 단위로 줄바꿈
+            inputTextArea.text = inputText // 텍스트 설정
 
             val inputScrollPane = JBScrollPane(inputTextArea)
             inputScrollPane.preferredSize = Dimension(ioWidth, ioHeight) // 선호 크기 설정
@@ -124,7 +124,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
         }
 
         // Row 4와 5: 출력 라벨, Copy 버튼, 출력 텍스트 영역
-        private fun createOutputTextPanel(): JPanel {
+        private fun createOutputTextPanel(outputText: String = ""): JPanel {
             val panel = JPanel()
             panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
 
@@ -144,6 +144,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             val outputTextArea = JTextArea(3, 5) // 3줄 높이, 5열 너비의 텍스트 영역
             outputTextArea.lineWrap = true // 자동 줄바꿈 설정
             outputTextArea.wrapStyleWord = true // 단어 단위로 줄바꿈
+            outputTextArea.text = outputText // 텍스트 설정
 
             val outputScrollPane = JBScrollPane(outputTextArea)
             outputScrollPane.preferredSize = Dimension(ioWidth, ioHeight) // 선호 크기 설정

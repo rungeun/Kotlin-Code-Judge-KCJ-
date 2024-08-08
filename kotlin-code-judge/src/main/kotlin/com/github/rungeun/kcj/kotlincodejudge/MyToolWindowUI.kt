@@ -1,5 +1,6 @@
 package com.github.rungeun.kcj.kotlincodejudge
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBLabel
 import javax.swing.*
 import java.awt.*
 
@@ -13,6 +14,24 @@ class MyToolWindowUI {
         // 메인 레이아웃 설정
         content.layout = BoxLayout(content, BoxLayout.Y_AXIS)
         content.background = outerBackgroundColor
+
+        // 연동 영역
+        val fetchPanel = JPanel()
+        fetchPanel.layout = BoxLayout(fetchPanel, BoxLayout.X_AXIS)
+        fetchPanel.background = innerBackgroundColor
+        fetchPanel.isOpaque = true
+        fetchPanel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10) // 패널 내부 패딩 추가
+
+        // 1행: 연동 입력창, 버튼
+        val fetchLabel = JBLabel("ProblemNumber: ")
+        val fetchTextField = JTextField(7) // 3줄 높이, 5열 너비의 텍스트 영역
+        fetchTextField.preferredSize = Dimension(60, 30) // 선호 크기 설정
+        fetchTextField.maximumSize = Dimension(70, 30) // 최대 크기 설정, 높이는 고정
+        val fetchButton = JButton("Fetch Test Cases")
+
+        fetchPanel.add(fetchLabel)
+        fetchPanel.add(fetchTextField)
+        fetchPanel.add(fetchButton)
 
         // 기능 버튼 영역
         val buttonPanel = JPanel()
@@ -41,7 +60,6 @@ class MyToolWindowUI {
         val guideButton = JButton("Guide")
         donateButton.addActionListener(GiveCoffeeActionListener())
         guideButton.addActionListener(GuideActionListener())
-
 
         row2Panel.add(donateButton)
         row2Panel.add(guideButton)
@@ -78,18 +96,21 @@ class MyToolWindowUI {
 
         newTestCasePanel.add(addNewTestCaseButton)
 
-
         addNewTestCaseButton.addActionListener {
             AddTestCaseActionListener.addNewTestCasePanel(testCasePanel)
         }
 
         addButtonPanel.add(newTestCasePanel)
 
+        // Fetch Test Cases 영역 추가
+        fetchButton.addActionListener(FetchTestCaseActionListener(fetchTextField, testCasePanel, fetchLabel))
+
         // 메인 콘텐츠 패널에 컴포넌트 추가
+        content.add(Box.createVerticalStrut(10)) // Add top margin
+        content.add(fetchPanel)
         content.add(Box.createVerticalStrut(10)) // Add top margin
         content.add(buttonPanel)
         content.add(Box.createVerticalStrut(10)) // Add margin between button panel and test case panel
-        //content.add(testCasePanel)
         content.add(scrollPane)
         content.add(addButtonPanel)
         content.add(Box.createVerticalStrut(10)) // Add bottom margin
