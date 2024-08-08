@@ -49,4 +49,5 @@ tasks {
 dependencies {
   implementation(kotlin("stdlib")) // Kotlin 표준 라이브러리 종속성 추가
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.3")
+  implementation("org.jsoup:jsoup:1.14.3")
 }
