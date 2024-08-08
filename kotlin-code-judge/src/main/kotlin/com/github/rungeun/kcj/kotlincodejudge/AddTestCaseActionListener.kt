@@ -6,7 +6,6 @@ import javax.swing.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 
-
 // 'AddTestCase' 버튼의 액션 리스너 클래스
 class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListener {
 
@@ -16,6 +15,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
 
     companion object {
         private var testCaseCount = 1 // 테스트 케이스의 번호를 추적
+
         //입출력창 크기 지정
         private val ioHeight = 60
         private val ioWidth = 120
@@ -28,13 +28,9 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
 
             // 새로운 테스트 케이스 레이아웃 추가
             newTestCasePanel.add(createTestCaseRow1Panel(testCaseCount))
-            newTestCasePanel.add(createTestCaseRow2Panel())
             newTestCasePanel.add(createInputTextPanel())
-            newTestCasePanel.add(createOutputLabelPanel())
             newTestCasePanel.add(createOutputTextPanel())
-            newTestCasePanel.add(createAnswerLabelPanel())
             newTestCasePanel.add(createAnswerTextPanel())
-            newTestCasePanel.add(createErrorLabelPanel())
             newTestCasePanel.add(createErrorTextPanel())
 
             // 생성된 패널을 메인 패널에 추가
@@ -42,7 +38,7 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             contentPanel.revalidate() // 패널 갱신
             contentPanel.repaint() // 패널 다시 그리기
 
-            testCaseCount++// 테스트 케이스 번호 증가
+            testCaseCount++ // 테스트 케이스 번호 증가
         }
 
         // Row 1: 테스트 케이스 라벨, Add 버튼, Delete 버튼
@@ -62,8 +58,11 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             return testCaseRow1Panel
         }
 
-        // Row 2: 입력 라벨, Copy 버튼
-        private fun createTestCaseRow2Panel(): JPanel {
+        // Row 2와 3: 입력 라벨, Copy 버튼, 입력 텍스트 영역
+        private fun createInputTextPanel(): JPanel {
+            val panel = JPanel()
+            panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+
             val testCaseRow2Panel = JPanel()
             testCaseRow2Panel.layout = BoxLayout(testCaseRow2Panel, BoxLayout.X_AXIS)
             val inputLabel = JLabel("In")
@@ -73,11 +72,6 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             testCaseRow2Panel.add(Box.createHorizontalGlue())
             testCaseRow2Panel.add(copyInputButton)
 
-            return testCaseRow2Panel
-        }
-
-        // Row 3: 입력 텍스트 영역
-        private fun createInputTextPanel(): JPanel {
             val inputTextPanel = JPanel()
             inputTextPanel.layout = BoxLayout(inputTextPanel, BoxLayout.X_AXIS)
             inputTextPanel.isOpaque = false
@@ -91,12 +85,19 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             inputScrollPane.maximumSize = Dimension(Int.MAX_VALUE, ioHeight) // 최대 크기 설정, 높이는 고정
 
             inputTextPanel.add(inputScrollPane)
+            copyInputButton.addActionListener(CopyTextActionListener(copyInputButton) { inputTextArea.text })
 
-            return inputTextPanel
+            panel.add(testCaseRow2Panel)
+            panel.add(inputTextPanel)
+
+            return panel
         }
 
-        // Row 4: 출력 라벨, Copy 버튼
-        private fun createOutputLabelPanel(): JPanel {
+        // Row 4와 5: 출력 라벨, Copy 버튼, 출력 텍스트 영역
+        private fun createOutputTextPanel(): JPanel {
+            val panel = JPanel()
+            panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+
             val outputLabelPanel = JPanel()
             outputLabelPanel.layout = BoxLayout(outputLabelPanel, BoxLayout.X_AXIS)
             val outputLabel = JLabel("Out")
@@ -106,11 +107,6 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             outputLabelPanel.add(Box.createHorizontalGlue())
             outputLabelPanel.add(copyOutputButton)
 
-            return outputLabelPanel
-        }
-
-        // Row 5: 출력 텍스트 영역
-        private fun createOutputTextPanel(): JPanel {
             val outputTextPanel = JPanel()
             outputTextPanel.layout = BoxLayout(outputTextPanel, BoxLayout.X_AXIS)
             outputTextPanel.isOpaque = false
@@ -124,12 +120,19 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             outputScrollPane.maximumSize = Dimension(Int.MAX_VALUE, ioHeight) // 최대 크기 설정, 높이는 고정
 
             outputTextPanel.add(outputScrollPane)
+            copyOutputButton.addActionListener(CopyTextActionListener(copyOutputButton) { outputTextArea.text })
 
-            return outputTextPanel
+            panel.add(outputLabelPanel)
+            panel.add(outputTextPanel)
+
+            return panel
         }
 
-        // Row 6: 정답 라벨, Copy 버튼
-        private fun createAnswerLabelPanel(): JPanel {
+        // Row 6와 7: 정답 라벨, Copy 버튼, 정답 텍스트 영역
+        private fun createAnswerTextPanel(): JPanel {
+            val panel = JPanel()
+            panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+
             val answerLabelPanel = JPanel()
             answerLabelPanel.layout = BoxLayout(answerLabelPanel, BoxLayout.X_AXIS)
             val answerLabel = JLabel("Answer")
@@ -139,11 +142,6 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             answerLabelPanel.add(Box.createHorizontalGlue())
             answerLabelPanel.add(copyAnswerButton)
 
-            return answerLabelPanel
-        }
-
-        // Row 7: 정답 텍스트 영역
-        private fun createAnswerTextPanel(): JPanel {
             val answerTextPanel = JPanel()
             answerTextPanel.layout = BoxLayout(answerTextPanel, BoxLayout.X_AXIS)
             answerTextPanel.isOpaque = false
@@ -160,12 +158,19 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             answerScrollPane.maximumSize = Dimension(Int.MAX_VALUE, ioHeight) // 최대 크기 설정, 높이는 고정
 
             answerTextPanel.add(answerScrollPane)
+            copyAnswerButton.addActionListener(CopyTextActionListener(copyAnswerButton) { answerTextArea.text })
 
-            return answerTextPanel
+            panel.add(answerLabelPanel)
+            panel.add(answerTextPanel)
+
+            return panel
         }
 
-        // Row 8: 오류 라벨, Copy 버튼
-        private fun createErrorLabelPanel(): JPanel {
+        // Row 8와 9: 오류 라벨, Copy 버튼, 오류 텍스트 영역
+        private fun createErrorTextPanel(): JPanel {
+            val panel = JPanel()
+            panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+
             val errorLabelPanel = JPanel()
             errorLabelPanel.layout = BoxLayout(errorLabelPanel, BoxLayout.X_AXIS)
             val errorLabel = JLabel("Cerr")
@@ -175,11 +180,6 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             errorLabelPanel.add(Box.createHorizontalGlue())
             errorLabelPanel.add(copyErrorButton)
 
-            return errorLabelPanel
-        }
-
-        // Row 9: 오류 텍스트 영역
-        private fun createErrorTextPanel(): JPanel {
             val errorTextPanel = JPanel()
             errorTextPanel.layout = BoxLayout(errorTextPanel, BoxLayout.X_AXIS)
             errorTextPanel.isOpaque = false
@@ -196,8 +196,12 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             errorScrollPane.maximumSize = Dimension(Int.MAX_VALUE, ioHeight) // 최대 크기 설정, 높이는 고정
 
             errorTextPanel.add(errorScrollPane)
+            copyErrorButton.addActionListener(CopyTextActionListener(copyErrorButton) { errorTextArea.text })
 
-            return errorTextPanel
+            panel.add(errorLabelPanel)
+            panel.add(errorTextPanel)
+
+            return panel
         }
     }
 }
