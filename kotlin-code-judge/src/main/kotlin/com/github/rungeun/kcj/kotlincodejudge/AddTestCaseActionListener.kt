@@ -15,8 +15,9 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
 
     companion object {
         private var testCaseCount = 1 // 테스트 케이스의 번호를 추적
+        private val testCasePanels = mutableListOf<JPanel>() // 테스트 케이스 패널 리스트
 
-        //입출력창 크기 지정
+        // 입출력창 크기 지정
         private val ioHeight = 60
         private val ioWidth = 120
 
@@ -26,8 +27,15 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             newTestCasePanel.layout = BoxLayout(newTestCasePanel, BoxLayout.Y_AXIS)
             newTestCasePanel.border = BorderFactory.createTitledBorder("TestCase")
 
+            // 테스트 케이스 패널이 없을 경우 번호를 1로 초기화
+            if (testCasePanels.isEmpty()) {
+                testCaseCount = 1
+            } else {
+                testCaseCount = testCasePanels.size + 1
+            }
+
             // 새로운 테스트 케이스 레이아웃 추가
-            newTestCasePanel.add(createTestCaseRow1Panel(testCaseCount))
+            newTestCasePanel.add(createTestCaseRow1Panel(testCaseCount, newTestCasePanel, contentPanel))
             newTestCasePanel.add(createInputTextPanel())
             newTestCasePanel.add(createOutputTextPanel())
             newTestCasePanel.add(createAnswerTextPanel())
@@ -35,20 +43,34 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
 
             // 생성된 패널을 메인 패널에 추가
             contentPanel.add(newTestCasePanel)
+            testCasePanels.add(newTestCasePanel) // 리스트에 추가
             contentPanel.revalidate() // 패널 갱신
             contentPanel.repaint() // 패널 다시 그리기
-
-            testCaseCount++ // 테스트 케이스 번호 증가
         }
 
         // Row 1: 테스트 케이스 라벨, Add 버튼, Delete 버튼
-        private fun createTestCaseRow1Panel(testCaseNumber: Int): JPanel {
+        private fun createTestCaseRow1Panel(testCaseNumber: Int, testCasePanel: JPanel, contentPanel: JPanel): JPanel {
             val testCaseRow1Panel = JPanel()
             testCaseRow1Panel.layout = BoxLayout(testCaseRow1Panel, BoxLayout.X_AXIS)
             testCaseRow1Panel.isOpaque = false
-            val testCaseLabel = JLabel("UTC $testCaseNumber") // TODO: 번호를 변수로 바꾸기
+            val testCaseLabel = JLabel("UTC $testCaseNumber") // 번호를 변수로 변경
             val addTestCaseButton = JButton("Copy TestCase")
             val deleteTestCaseButton = JButton("Delete")
+
+            // Delete 버튼에 액션 리스너 추가
+            deleteTestCaseButton.addActionListener {
+                // 부모 패널에서 해당 테스트 케이스 패널을 제거
+                contentPanel.remove(testCasePanel)
+                testCasePanels.remove(testCasePanel) // 리스트에서 제거
+                renumberTestCases() // 테스트 케이스 재번호 매기기
+                contentPanel.revalidate() // 패널 갱신
+                contentPanel.repaint() // 패널 다시 그리기
+
+                // 모든 테스트 케이스 패널이 삭제된 경우 번호 초기화
+                if (testCasePanels.isEmpty()) {
+                    testCaseCount = 1
+                }
+            }
 
             testCaseRow1Panel.add(testCaseLabel)
             testCaseRow1Panel.add(Box.createHorizontalGlue()) // 공백 추가
@@ -56,6 +78,14 @@ class AddTestCaseActionListener(private val contentPanel: JPanel) : ActionListen
             testCaseRow1Panel.add(deleteTestCaseButton)
 
             return testCaseRow1Panel
+        }
+
+        private fun renumberTestCases() {
+            testCasePanels.forEachIndexed { index, panel ->
+                val label = (panel.getComponent(0) as JPanel).getComponent(0) as JLabel
+                label.text = "UTC ${index + 1}"
+            }
+            testCaseCount = testCasePanels.size + 1 // 다음 테스트 케이스 번호 동기화
         }
 
         // Row 2와 3: 입력 라벨, Copy 버튼, 입력 텍스트 영역
