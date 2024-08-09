@@ -5,19 +5,28 @@
 ## 변경사항
 
 ### 2024.08.07
-- 변수명 전면 개편
-- CopyActionListener.kt에서 CopyTextActionListener.kt로 변경
-- MyToolWindowUI.kt: 에서 UTC를 분리
-- AddTestCaseActionListener.kt: AddTestCase 버튼을 눌렀을 때 새로운 테스트 케이스 패널을 생성하고 메인 패널에 추가하는 기능을 구현
-- New TestCase구현 완료
+- 완료
+    - 변수명 전면 개편 
+    - CopyActionListener.kt에서 CopyTextActionListener.kt로 변경
+    - MyToolWindowUI.kt: 에서 UTC를 분리
+    - AddTestCaseActionListener.kt: AddTestCase 버튼을 눌렀을 때 새로운 테스트 케이스 패널을 생성하고 메인 패널에 추가하는 기능을 구현
+    - New TestCase구현 완료
 
 ### 2024.08.08
-- TC IN/OUT/ERROR COPY 기능
-- Delete 버튼 기능 구현
+- 완료  
+    - TC IN/OUT/ERROR COPY 기능
+    - Delete 버튼 기능 구현
+    - Give coffee 버튼 기능 구현 (GiveCoffeeActionListener.kt)
+    - BOJ 연동 UI 구현 및 기능 구현
+- 진행중
+    - Copy TestCase 버튼 기능 구현
 
-- Copy TestCase 버튼 기능 구현
-- Give coffee 버튼 기능 구현 (GiveCoffeeActionListener.kt)
-- BOJ 연동 UI 구현 및 기능 구현
+### 2024.08.09
+- 완료
+    - Delete 버튼 UI와 기능 구현 부분 분리
+- 진행중
+    - TC창 축소 구현(시작)
+
 
 ## 예정
 - TC창 축소
