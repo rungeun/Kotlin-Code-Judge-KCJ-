@@ -5,12 +5,11 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import java.io.IOException
-import javax.swing.JPanel
 import javax.swing.JTextField
 
 class FetchTestCaseActionListener(
     private val problemNumberField: JTextField,
-    private val testCasePanel: JPanel,
+    private val testCaseManager: TestCaseManager,
     private val fetchLabel: JBLabel
 ) : java.awt.event.ActionListener {
 
@@ -19,7 +18,7 @@ class FetchTestCaseActionListener(
         val testCases = fetchTestCases(problemNumber)
         if (testCases != null) {
             for ((input, output) in testCases) {
-                AddTestCaseActionListener.addNewTestCasePanel(testCasePanel, input, output)
+                testCaseManager.addNewTestCase(input, output)
             }
         }
     }
@@ -29,9 +28,7 @@ class FetchTestCaseActionListener(
         return try {
             val doc: Document = Jsoup.connect(url).get()
 
-            // 'pre' 태그를 모두 선택
             val examples: Elements = doc.select("pre.sampledata")
-
             val result = mutableListOf<Pair<String, String>>()
             for (i in examples.indices step 2) {
                 val input = examples[i].text()
