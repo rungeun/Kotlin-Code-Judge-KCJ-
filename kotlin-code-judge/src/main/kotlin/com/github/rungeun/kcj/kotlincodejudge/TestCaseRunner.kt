@@ -42,15 +42,15 @@ class TestCaseRunner(private val projectBaseDir: String, private val project: Pr
 
             override fun done() {
                 try {
-                    val result = get() // runTestCase에서 반환된 실제 출력값
+                    val result = get() // runTestCase에서 반환된 결과
                     endTime = System.currentTimeMillis()
                     val executionTime = endTime - startTime
 
-                    // 만약 컴파일 에러인 경우 result는 "CE"이고, 그렇지 않으면 "AC" 또는 "WA"
                     when (result) {
                         "CE" -> testCase.panel.border = BorderFactory.createTitledBorder("CE - $executionTime ms")
                         "AC" -> testCase.panel.border = BorderFactory.createTitledBorder("AC - $executionTime ms")
                         "WA" -> testCase.panel.border = BorderFactory.createTitledBorder("WA - $executionTime ms")
+                        "RE" -> testCase.panel.border = BorderFactory.createTitledBorder("RE - $executionTime ms")
                         else -> testCase.panel.border = BorderFactory.createTitledBorder("Unknown Error")
                     }
 
@@ -68,9 +68,9 @@ class TestCaseRunner(private val projectBaseDir: String, private val project: Pr
     }
 
     private fun runTestCase(input: String, expectedOutput: String, answerTextArea: JTextArea, errorTextArea: JTextArea): String {
-        val editor = EditorFactory.getInstance().allEditors.firstOrNull { it.project == project } ?: return "CE"
+        val editor = EditorFactory.getInstance().allEditors.firstOrNull { it.project == project } ?: return "No file open."
         val document = editor.document
-        val virtualFile: VirtualFile = FileDocumentManager.getInstance().getFile(document) ?: return "CE"
+        val virtualFile: VirtualFile = FileDocumentManager.getInstance().getFile(document) ?: return "Unable to get the VirtualFile."
         val code = document.text
 
         val buildDir = File("$projectBaseDir/buildtc")
@@ -119,15 +119,23 @@ class TestCaseRunner(private val projectBaseDir: String, private val project: Pr
             // 실제 출력을 Answer 텍스트 영역에 설정
             answerTextArea.text = actualOutput
 
-            // 정답 비교
-            return if (compareOutputs(actualOutput, expectedOutput)) "AC" else "WA"
+            // 실행 중에 발생한 에러가 있으면 "RE" 반환 (System.err와 관계 없이 비교는 진행)
+            val isRuntimeError = errOutput.isNotBlank() && errOutput.contains("Exception")
+
+            // AC 또는 WA 판별
+            val isCorrect = compareOutputs(actualOutput, expectedOutput)
+
+            return when {
+                isRuntimeError -> "RE"
+                isCorrect -> "AC"
+                else -> "WA"
+            }
         } catch (e: IOException) {
             errorTextArea.text = "Error during execution: ${e.message}"
             return "CE"
         } catch (e: Exception) {
-            // 다른 모든 예외도 "CE"로 처리
-            errorTextArea.text = "Error during execution: ${e.message}"
-            return "CE"
+            errorTextArea.text = "Runtime Error: ${e.message}"
+            return "RE"
         } finally {
             sourceFile.delete()
             File(buildDir, "TempProgramOutput.txt").delete()
