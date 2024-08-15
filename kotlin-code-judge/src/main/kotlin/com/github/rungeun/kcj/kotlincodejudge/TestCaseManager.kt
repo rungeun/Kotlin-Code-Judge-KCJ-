@@ -32,27 +32,36 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         val outputTextArea = JTextArea(3, 5)
         val answerTextArea = JTextArea(3, 5)
         val errorTextArea = JTextArea(3, 5)
+        val selectTestCase = JCheckBox()
 
-        newTestCasePanel.add(createTestCaseRow1Panel(utcNumber, newTestCasePanel))
+        newTestCasePanel.add(createTestCaseRow1Panel(utcNumber, newTestCasePanel, selectTestCase))
         newTestCasePanel.add(createInputTextPanel(inputTextArea, inputText))
         newTestCasePanel.add(createOutputTextPanel(outputTextArea, outputText))
         newTestCasePanel.add(createAnswerTextPanel(answerTextArea))
         newTestCasePanel.add(createErrorTextPanel(errorTextArea))
 
         testCasePanel.add(newTestCasePanel)
-        testCasePanels.add(TestCaseComponents(newTestCasePanel, inputTextArea, outputTextArea, answerTextArea, errorTextArea))
+        testCasePanels.add(
+            TestCaseComponents(
+                newTestCasePanel,
+                selectTestCase,
+                inputTextArea,
+                outputTextArea,
+                answerTextArea,
+                errorTextArea
+            )
+        )
         testCasePanel.revalidate()
         testCasePanel.repaint()
 
         testCaseCount++
-        renumberTestCases() // 새로운 테스트 케이스 추가 후 리넘버링
+        renumberTestCases()
     }
 
-    private fun createTestCaseRow1Panel(testCaseNumber: Int, testCasePanel: JPanel): JPanel {
+    private fun createTestCaseRow1Panel(testCaseNumber: Int, testCasePanel: JPanel, selectTestCase: JCheckBox): JPanel {
         val panel = JPanel()
         panel.layout = BoxLayout(panel, BoxLayout.X_AXIS)
         panel.isOpaque = false
-
         val testCaseLabel = JLabel("UTC $testCaseNumber")
         val copyTestCaseButton = JButton("Copy TestCase")
         val deleteTestCaseButton = JButton("Delete")
@@ -62,7 +71,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
             renumberTestCases()
         }
 
-
+        panel.add(selectTestCase)
         panel.add(testCaseLabel)
         panel.add(Box.createHorizontalGlue())
         panel.add(copyTestCaseButton)
@@ -80,9 +89,8 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         val inputLabel = JLabel("In")
         val copyButton = JButton("Copy")
         copyButton.isOpaque = false
-        copyButton.background = Color(0, 0, 0, 0) // 투명한 배경 설정
-        copyButton.border = BorderFactory.createEmptyBorder() // 경계선을 없앰
-
+        copyButton.background = Color(0, 0, 0, 0)
+        copyButton.border = BorderFactory.createEmptyBorder()
 
         labelPanel.add(inputLabel)
         labelPanel.add(Box.createHorizontalGlue())
@@ -96,10 +104,6 @@ class TestCaseManager(private val testCasePanel: JPanel) {
 
         panel.add(labelPanel)
         panel.add(scrollPane)
-
-
-
-
 
         return panel
     }
@@ -143,7 +147,6 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         copyButton.background = Color(0, 0, 0, 0)
         copyButton.border = BorderFactory.createEmptyBorder()
         copyButton.addActionListener(CopyTextActionListener(copyButton) { textArea.text })
-
 
         labelPanel.add(answerLabel)
         labelPanel.add(Box.createHorizontalGlue())
@@ -200,5 +203,13 @@ class TestCaseManager(private val testCasePanel: JPanel) {
 
     fun getTestCases(): List<TestCaseComponents> {
         return testCasePanels
+    }
+
+    fun selectAllTestCases(selected: Boolean) {
+        testCasePanels.forEach { it.selectTestCase.isSelected = selected }
+    }
+
+    fun getSelectedTestCases(): List<TestCaseComponents> {
+        return testCasePanels.filter { it.selectTestCase.isSelected }
     }
 }
