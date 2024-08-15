@@ -3,13 +3,14 @@ package com.github.rungeun.kcj.kotlincodejudge
 import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBScrollPane
 import javax.swing.*
 import java.awt.*
 
 class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     val content: JPanel = JPanel()
 
-    private val outerBackgroundColor: JBColor = JBColor.LIGHT_GRAY
+    private val outerBackgroundColor: JBColor = JBColor.GREEN
     private val innerBackgroundColor: JBColor = JBColor.WHITE
 
     // TestCaseManager를 초기화하면서 testCasePanel을 전달
@@ -71,10 +72,36 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         row2Panel.add(donateButton)
         row2Panel.add(guideButton)
 
+        val row3Panel = JPanel()
+        row3Panel.layout = BoxLayout(row3Panel, BoxLayout.X_AXIS)
+        row3Panel.isOpaque = false
+        val selectAll = JButton("All")
+        val clearSelection = JButton("Clear")
+
+        row3Panel.add(selectAll)
+        row3Panel.add(clearSelection)
+
+        // 'All' 버튼 클릭 시 모든 체크박스 선택
+        selectAll.addActionListener {
+            testCaseManager.selectAllTestCases(true)
+        }
+
+        // 'Clear' 버튼 클릭 시 모든 체크박스 해제
+        clearSelection.addActionListener {
+            testCaseManager.selectAllTestCases(false)
+        }
+
+        // 'Some Run' 버튼 클릭 시 선택된 테스트 케이스만 실행
+        someRunButton.addActionListener {
+            val selectedTestCases = testCaseManager.getSelectedTestCases()
+            TestCaseRunner(projectBaseDir, project).runAllTestCasesSequentially(selectedTestCases)
+        }
+
         buttonPanel.add(row1Panel)
         buttonPanel.add(row2Panel)
+        buttonPanel.add(row3Panel)
 
-        val scrollPane = JScrollPane(testCasePanel)
+        val scrollPane = JBScrollPane(testCasePanel)
         scrollPane.verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
         scrollPane.horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         scrollPane.verticalScrollBar.unitIncrement = 16
@@ -93,7 +120,7 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         newTestCasePanel.add(addNewTestCaseButton)
 
         addNewTestCaseButton.addActionListener {
-            testCaseManager.addNewTestCase() // testCaseManager의 addNewTestCase 호출
+            testCaseManager.addNewTestCase()
         }
 
         addButtonPanel.add(newTestCasePanel)
