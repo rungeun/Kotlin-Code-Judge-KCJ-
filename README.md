@@ -45,6 +45,13 @@
     - 체크 박스 UI 구현
     - TC 일부 실행 기능 구현
 
+
+### 2024.09.17
+- 완료
+    - StopActionListener.kt: Stop 버튼 기능 구현
+    - 실행 결과의 가독성을 높이기 위해 색상을 변경
+    - 일부 변수명 변경
+
 ## 예정
 - TC창 축소
     - 1-1. TC레이아웃의 UiFolded상태, UiMidway상태, UiExpanded상태
