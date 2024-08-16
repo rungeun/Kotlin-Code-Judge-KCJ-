@@ -4,11 +4,12 @@ import com.intellij.ui.components.JBScrollPane
 import java.awt.Color
 import java.awt.Dimension
 import javax.swing.*
-
+import javax.swing.border.TitledBorder
 class TestCaseManager(private val testCasePanel: JPanel) {
 
     private var testCaseCount = 1
     private val testCasePanels = mutableListOf<TestCaseComponents>()
+    private var runningTestCase: TestCaseComponents? = null
 
     fun addTestCaseComponent(testCaseComponent: TestCaseComponents) {
         testCasePanels.add(testCaseComponent)
@@ -20,6 +21,21 @@ class TestCaseManager(private val testCasePanel: JPanel) {
 
     fun getAllTestCaseComponents(): List<TestCaseComponents> {
         return testCasePanels
+    }
+
+    fun getSelectedTestCaseComponents(): List<TestCaseComponents> {
+        return testCasePanels.filter { it.selectTestCase.isSelected }
+    }
+
+    fun setRunningTestCase(testCaseComponent: TestCaseComponents) {
+        runningTestCase = testCaseComponent
+    }
+
+    fun getRunningTestCase(): TestCaseComponents? {
+        return getAllTestCaseComponents().find {
+            val border = it.panel.border
+            border is TitledBorder && border.title.startsWith("Judging")
+        }
     }
 
     fun addNewTestCase(inputText: String = "", outputText: String = "") {
@@ -55,10 +71,10 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         testCasePanel.repaint()
 
         testCaseCount++
-        renumberTestCases()
+        renumberTestCases() // 새로운 테스트 케이스 추가 후 리넘버링
     }
 
-    private fun createTestCaseRow1Panel(testCaseNumber: Int, testCasePanel: JPanel, selectTestCase: JCheckBox): JPanel {
+    private fun createTestCaseRow1Panel(testCaseNumber: Int, testCasePanel: JPanel, checkBox: JCheckBox): JPanel {
         val panel = JPanel()
         panel.layout = BoxLayout(panel, BoxLayout.X_AXIS)
         panel.isOpaque = false
@@ -71,7 +87,13 @@ class TestCaseManager(private val testCasePanel: JPanel) {
             renumberTestCases()
         }
 
-        panel.add(selectTestCase)
+
+
+
+
+
+
+        panel.add(checkBox)
         panel.add(testCaseLabel)
         panel.add(Box.createHorizontalGlue())
         panel.add(copyTestCaseButton)
@@ -89,8 +111,8 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         val inputLabel = JLabel("In")
         val copyButton = JButton("Copy")
         copyButton.isOpaque = false
-        copyButton.background = Color(0, 0, 0, 0)
-        copyButton.border = BorderFactory.createEmptyBorder()
+        copyButton.background = Color(0, 0, 0, 0) // 투명한 배경 설정
+        copyButton.border = BorderFactory.createEmptyBorder() // 경계선을 없앰
 
         labelPanel.add(inputLabel)
         labelPanel.add(Box.createHorizontalGlue())
@@ -124,6 +146,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         labelPanel.add(outputLabel)
         labelPanel.add(Box.createHorizontalGlue())
         labelPanel.add(copyButton)
+
         textArea.text = outputText
         val scrollPane = JBScrollPane(textArea)
         scrollPane.preferredSize = Dimension(120, 60)
@@ -151,6 +174,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         labelPanel.add(answerLabel)
         labelPanel.add(Box.createHorizontalGlue())
         labelPanel.add(copyButton)
+
         val scrollPane = JBScrollPane(textArea)
         scrollPane.preferredSize = Dimension(120, 60)
         scrollPane.maximumSize = Dimension(Int.MAX_VALUE, 60)
@@ -177,6 +201,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         labelPanel.add(errorLabel)
         labelPanel.add(Box.createHorizontalGlue())
         labelPanel.add(copyButton)
+
         val scrollPane = JBScrollPane(textArea)
         scrollPane.preferredSize = Dimension(120, 60)
         scrollPane.maximumSize = Dimension(Int.MAX_VALUE, 60)
@@ -190,19 +215,23 @@ class TestCaseManager(private val testCasePanel: JPanel) {
     private fun removeTestCaseComponentByPanel(panel: JPanel) {
         testCasePanels.removeIf { it.panel == panel }
         testCasePanel.remove(panel)
+
+        // Swing의 이벤트 디스패치 스레드에서 레이아웃을 강제로 재계산
+        SwingUtilities.invokeLater {
+            testCasePanel.revalidate()
+            testCasePanel.repaint()
+        }
     }
+
 
     private fun renumberTestCases() {
         testCasePanels.forEachIndexed { index, testCase ->
             val labelPanel = testCase.panel.getComponent(0) as JPanel
-            val label = labelPanel.components.filterIsInstance<JLabel>().firstOrNull { it.text.startsWith("UTC") }
-            label?.text = "UTC ${index + 1}"
+            val label = labelPanel.getComponent(1) as JLabel // UTC 번호 라벨이 있는 위치를 정확히 지정
+            label.text = "UTC ${index + 1}"
             testCase.panel.border = BorderFactory.createTitledBorder("TestCase ${index + 1}")
         }
-    }
-
-    fun getTestCases(): List<TestCaseComponents> {
-        return testCasePanels
+        testCaseCount = testCasePanels.size + 1
     }
 
     fun selectAllTestCases(selected: Boolean) {
@@ -212,4 +241,8 @@ class TestCaseManager(private val testCasePanel: JPanel) {
     fun getSelectedTestCases(): List<TestCaseComponents> {
         return testCasePanels.filter { it.selectTestCase.isSelected }
     }
+    fun getTestCases(): List<TestCaseComponents> {
+        return testCasePanels
+    }
 }
+

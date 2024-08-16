@@ -6,6 +6,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import javax.swing.*
 import java.awt.*
+import javax.swing.border.TitledBorder
 
 class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     val content: JPanel = JPanel()
@@ -23,6 +24,12 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     }
 
     private val testCaseManager = TestCaseManager(testCasePanel)
+
+    private lateinit var testCaseRunner: TestCaseRunner
+    private lateinit var runButton: JButton
+    private lateinit var someRunButton: JButton
+    private lateinit var stopButton: JButton
+    private lateinit var newTestCaseButton: JButton
 
     init {
         content.layout = BoxLayout(content, BoxLayout.Y_AXIS)
@@ -53,9 +60,9 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         val row1Panel = JPanel()
         row1Panel.layout = BoxLayout(row1Panel, BoxLayout.X_AXIS)
         row1Panel.isOpaque = false
-        val runButton = JButton("Run")
-        val someRunButton = JButton("Some Run")
-        val stopButton = JButton("Stop")
+        runButton = JButton("Run")
+        someRunButton = JButton("Some Run")
+        stopButton = JButton("Stop")
 
         row1Panel.add(runButton)
         row1Panel.add(someRunButton)
@@ -81,22 +88,6 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         row3Panel.add(selectAll)
         row3Panel.add(clearSelection)
 
-        // 'All' 버튼 클릭 시 모든 체크박스 선택
-        selectAll.addActionListener {
-            testCaseManager.selectAllTestCases(true)
-        }
-
-        // 'Clear' 버튼 클릭 시 모든 체크박스 해제
-        clearSelection.addActionListener {
-            testCaseManager.selectAllTestCases(false)
-        }
-
-        // 'Some Run' 버튼 클릭 시 선택된 테스트 케이스만 실행
-        someRunButton.addActionListener {
-            val selectedTestCases = testCaseManager.getSelectedTestCases()
-            TestCaseRunner(projectBaseDir, project).runAllTestCasesSequentially(selectedTestCases)
-        }
-
         buttonPanel.add(row1Panel)
         buttonPanel.add(row2Panel)
         buttonPanel.add(row3Panel)
@@ -112,14 +103,13 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         addButtonPanel.isOpaque = true
         addButtonPanel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
 
+        newTestCaseButton = JButton("New TestCase")
         val newTestCasePanel = JPanel()
         newTestCasePanel.layout = BoxLayout(newTestCasePanel, BoxLayout.X_AXIS)
         newTestCasePanel.isOpaque = false
-        val addNewTestCaseButton = JButton("New TestCase")
+        newTestCasePanel.add(newTestCaseButton)
 
-        newTestCasePanel.add(addNewTestCaseButton)
-
-        addNewTestCaseButton.addActionListener {
+        newTestCaseButton.addActionListener {
             testCaseManager.addNewTestCase()
         }
 
@@ -127,8 +117,34 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
 
         fetchButton.addActionListener(FetchTestCaseActionListener(fetchTextField, testCaseManager, fetchLabel))
 
+        testCaseRunner = TestCaseRunner(projectBaseDir, project) {
+            runButton.isEnabled = true
+            someRunButton.isEnabled = true
+            newTestCaseButton.isEnabled = true
+            stopButton.isEnabled = false
+        }
+
         runButton.addActionListener {
-            TestCaseRunner(projectBaseDir, project).runAllTestCasesSequentially(testCaseManager.getAllTestCaseComponents())
+            disableButtonsDuringExecution()
+            testCaseRunner.runAllTestCasesSequentially(testCaseManager.getAllTestCaseComponents())
+        }
+
+        someRunButton.addActionListener {
+            disableButtonsDuringExecution()
+            testCaseRunner.runSelectedTestCasesSequentially(testCaseManager.getSelectedTestCaseComponents())
+        }
+
+        stopButton.addActionListener {
+            stopButton.isEnabled = false
+            testCaseRunner.requestStop()
+            testCaseManager.getRunningTestCase()?.let {
+                SwingUtilities.invokeLater {
+                    val border = it.panel.border
+                    if (border is TitledBorder) {
+                        it.panel.border = BorderFactory.createTitledBorder("Stopping...")
+                    }
+                }
+            }
         }
 
         content.add(Box.createVerticalStrut(10))
@@ -140,5 +156,14 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         content.add(addButtonPanel)
         content.add(Box.createVerticalStrut(10))
         content.isVisible = true
+
+        stopButton.isEnabled = false
+    }
+
+    private fun disableButtonsDuringExecution() {
+        runButton.isEnabled = false
+        someRunButton.isEnabled = false
+        newTestCaseButton.isEnabled = false
+        stopButton.isEnabled = true
     }
 }
