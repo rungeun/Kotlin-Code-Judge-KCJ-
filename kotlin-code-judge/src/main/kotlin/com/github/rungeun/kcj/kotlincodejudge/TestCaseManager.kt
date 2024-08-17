@@ -10,6 +10,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
     private var testCaseCount = 1
     private val testCasePanels = mutableListOf<TestCaseComponents>()
     private var runningTestCase: TestCaseComponents? = null
+    private val uiStateManagers = mutableMapOf<Int, UIStateManager>()
 
     fun addTestCaseComponent(testCaseComponent: TestCaseComponents) {
         testCasePanels.add(testCaseComponent)
@@ -27,9 +28,10 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         return testCasePanels.filter { it.selectTestCase.isSelected }
     }
 
-    fun setRunningTestCase(testCaseComponent: TestCaseComponents) {
-        runningTestCase = testCaseComponent
+    fun setUiStateForTestCase(utcNumber: Int, state: UIState, executed: Boolean) {
+        uiStateManagers[utcNumber]?.setState(state, executed)
     }
+
 
     fun getRunningTestCase(): TestCaseComponents? {
         return getAllTestCaseComponents().find {
@@ -49,12 +51,18 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         val answerTextArea = JTextArea(3, 5)
         val errorTextArea = JTextArea(3, 5)
         val selectTestCase = JCheckBox()
+        val uiStateButton = JButton("UI state changes")
 
-        newTestCasePanel.add(createTestCaseRow1Panel(utcNumber, newTestCasePanel, selectTestCase))
-        newTestCasePanel.add(createInputTextPanel(inputTextArea, inputText))
-        newTestCasePanel.add(createOutputTextPanel(outputTextArea, outputText))
-        newTestCasePanel.add(createAnswerTextPanel(answerTextArea))
-        newTestCasePanel.add(createErrorTextPanel(errorTextArea))
+        val inputPanel = createInputTextPanel(inputTextArea, inputText)
+        val outputPanel = createOutputTextPanel(outputTextArea, outputText)
+        val answerPanel = createAnswerTextPanel(answerTextArea)
+        val errorPanel = createErrorTextPanel(errorTextArea)
+
+        newTestCasePanel.add(createTestCaseRow1Panel(utcNumber, newTestCasePanel, selectTestCase, uiStateButton))
+        newTestCasePanel.add(inputPanel)
+        newTestCasePanel.add(outputPanel)
+        newTestCasePanel.add(answerPanel)
+        newTestCasePanel.add(errorPanel)
 
         testCasePanel.add(newTestCasePanel)
         testCasePanels.add(
@@ -67,6 +75,10 @@ class TestCaseManager(private val testCasePanel: JPanel) {
                 errorTextArea
             )
         )
+
+        val uiStateManager = UIStateManager(newTestCasePanel, inputPanel, outputPanel, answerPanel, errorPanel, uiStateButton)
+        uiStateManagers[utcNumber] = uiStateManager
+
         testCasePanel.revalidate()
         testCasePanel.repaint()
 
@@ -74,11 +86,25 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         renumberTestCases() // 새로운 테스트 케이스 추가 후 리넘버링
     }
 
-    private fun createTestCaseRow1Panel(testCaseNumber: Int, testCasePanel: JPanel, checkBox: JCheckBox): JPanel {
+    fun setUiStateForTestCase(utcNumber: Int, state: UIState) {
+        uiStateManagers[utcNumber]?.setState(state)
+    }
+
+    private fun createTestCaseRow1Panel(testCaseNumber: Int, testCasePanel: JPanel, checkBox: JCheckBox, uiStateButton: JButton): JPanel {
         val panel = JPanel()
-        panel.layout = BoxLayout(panel, BoxLayout.X_AXIS)
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
         panel.isOpaque = false
+
+        val topRowPanel = JPanel()
+        topRowPanel.layout = BoxLayout(topRowPanel, BoxLayout.X_AXIS)
+        topRowPanel.isOpaque = false
+
         val testCaseLabel = JLabel("UTC $testCaseNumber")
+
+        val bottomRowPanel = JPanel()
+        bottomRowPanel.layout = BoxLayout(bottomRowPanel, BoxLayout.X_AXIS)
+        bottomRowPanel.isOpaque = false
+
         val copyTestCaseButton = JButton("Copy TestCase")
         val deleteTestCaseButton = JButton("Delete")
 
@@ -87,20 +113,22 @@ class TestCaseManager(private val testCasePanel: JPanel) {
             renumberTestCases()
         }
 
+        // UI state changes 버튼을 추가
+        topRowPanel.add(Box.createHorizontalGlue())
+        topRowPanel.add(uiStateButton)
 
+        bottomRowPanel.add(checkBox)
+        bottomRowPanel.add(testCaseLabel)
+        bottomRowPanel.add(Box.createHorizontalGlue())
+        bottomRowPanel.add(copyTestCaseButton)
+        bottomRowPanel.add(deleteTestCaseButton)
 
-
-
-
-
-        panel.add(checkBox)
-        panel.add(testCaseLabel)
-        panel.add(Box.createHorizontalGlue())
-        panel.add(copyTestCaseButton)
-        panel.add(deleteTestCaseButton)
+        panel.add(topRowPanel)
+        panel.add(bottomRowPanel)
 
         return panel
     }
+
 
     private fun createInputTextPanel(textArea: JTextArea, inputText: String): JPanel {
         val panel = JPanel()
@@ -216,23 +244,23 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         testCasePanels.removeIf { it.panel == panel }
         testCasePanel.remove(panel)
 
-        // Swing의 이벤트 디스패치 스레드에서 레이아웃을 강제로 재계산
         SwingUtilities.invokeLater {
             testCasePanel.revalidate()
             testCasePanel.repaint()
         }
     }
 
-
     private fun renumberTestCases() {
         testCasePanels.forEachIndexed { index, testCase ->
             val labelPanel = testCase.panel.getComponent(0) as JPanel
-            val label = labelPanel.getComponent(1) as JLabel // UTC 번호 라벨이 있는 위치를 정확히 지정
+            val bottomRowPanel = labelPanel.getComponent(1) as JPanel // 여기서 하위 JPanel을 가져옵니다.
+            val label = bottomRowPanel.getComponent(1) as JLabel // UTC 번호 라벨이 있는 위치를 정확히 지정
             label.text = "UTC ${index + 1}"
             testCase.panel.border = BorderFactory.createTitledBorder("TestCase ${index + 1}")
         }
         testCaseCount = testCasePanels.size + 1
     }
+
 
     fun selectAllTestCases(selected: Boolean) {
         testCasePanels.forEach { it.selectTestCase.isSelected = selected }
@@ -241,6 +269,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
     fun getSelectedTestCases(): List<TestCaseComponents> {
         return testCasePanels.filter { it.selectTestCase.isSelected }
     }
+
     fun getTestCases(): List<TestCaseComponents> {
         return testCasePanels
     }
