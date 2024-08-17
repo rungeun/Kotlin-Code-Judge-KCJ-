@@ -5,7 +5,8 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.vladsch.flexmark.util.html.ui.Color
+import com.intellij.ui.JBColor
+import java.awt.Color // Correct import
 import java.io.File
 import java.io.IOException
 import javax.swing.*
@@ -14,7 +15,8 @@ import javax.swing.border.TitledBorder
 class TestCaseRunner(
     private val projectBaseDir: String,
     private val project: Project,
-    private val onExecutionFinished: () -> Unit // 콜백 추가
+    private val onExecutionFinished: () -> Unit, // 모든 실행이 끝난 후 호출할 콜백
+    private val onTestCaseFinished: (Int, String) -> Unit // 각 테스트 케이스가 끝날 때 호출할 콜백
 ) {
     private var stopRequested = false
 
@@ -34,7 +36,7 @@ class TestCaseRunner(
 
     private fun runTestCase(index: Int, testCasePanels: List<TestCaseComponents>) {
         if (index >= testCasePanels.size || stopRequested) {
-            onExecutionFinished()
+            onExecutionFinished() // 모든 테스트가 끝난 후 버튼 상태를 복원
             return
         }
 
@@ -75,65 +77,54 @@ class TestCaseRunner(
 
                     SwingUtilities.invokeLater {
                         testCase.panel.border = when (result) {
-                            "AC" -> {
-                                val border = BorderFactory.createTitledBorder(
-                                    BorderFactory.createLineBorder(Color.GREEN), // 테두리선 색상 설정
-                                    "AC - $executionTime ms",
-                                    TitledBorder.DEFAULT_JUSTIFICATION,
-                                    TitledBorder.DEFAULT_POSITION,
-                                    null, // 폰트 (null로 하면 기본 폰트)
-                                    Color.GREEN // 텍스트 색상 설정
-                                )
-                                border
-                            }
-                            "WA" -> {
-                                val border = BorderFactory.createTitledBorder(
-                                    BorderFactory.createLineBorder(Color.RED), // 테두리선 색상 설정
-                                    "WA - $executionTime ms",
-                                    TitledBorder.DEFAULT_JUSTIFICATION,
-                                    TitledBorder.DEFAULT_POSITION,
-                                    null, // 폰트 (null로 하면 기본 폰트)
-                                    Color.RED // 텍스트 색상 설정
-                                )
-                                border
-                            }
-                            "CE" -> {
-                                val border = BorderFactory.createTitledBorder(
-                                    BorderFactory.createLineBorder(Color.MAGENTA), // 테두리선 색상 설정
-                                    "CE - $executionTime ms",
-                                    TitledBorder.DEFAULT_JUSTIFICATION,
-                                    TitledBorder.DEFAULT_POSITION,
-                                    null, // 폰트 (null로 하면 기본 폰트)
-                                    Color.MAGENTA // 텍스트 색상 설정
-                                )
-                                border
-                            }
-                            "RE" -> {
-                                val border = BorderFactory.createTitledBorder(
-                                    BorderFactory.createLineBorder(Color.ORANGE), // 테두리선 색상 설정
-                                    "RE - $executionTime ms",
-                                    TitledBorder.DEFAULT_JUSTIFICATION,
-                                    TitledBorder.DEFAULT_POSITION,
-                                    null, // 폰트 (null로 하면 기본 폰트)
-                                    Color.ORANGE // 텍스트 색상 설정
-                                )
-                                border
-                            }
-                            "Stopped" -> {
-                                val border = BorderFactory.createTitledBorder(
-                                    BorderFactory.createLineBorder(Color.BLACK), // 테두리선 색상 설정
-                                    "Stopped",
-                                    TitledBorder.DEFAULT_JUSTIFICATION,
-                                    TitledBorder.DEFAULT_POSITION,
-                                    null, // 폰트 (null로 하면 기본 폰트)
-                                    Color.BLACK // 텍스트 색상 설정
-                                )
-                                border
-                            }
+                            "AC" -> BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(JBColor.GREEN),
+                                "AC - $executionTime ms",
+                                TitledBorder.DEFAULT_JUSTIFICATION,
+                                TitledBorder.DEFAULT_POSITION,
+                                null,
+                                JBColor.GREEN
+                            )
+                            "WA" -> BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(Color.RED),
+                                "WA - $executionTime ms",
+                                TitledBorder.DEFAULT_JUSTIFICATION,
+                                TitledBorder.DEFAULT_POSITION,
+                                null,
+                                Color.RED
+                            )
+                            "CE" -> BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(Color.MAGENTA),
+                                "CE - $executionTime ms",
+                                TitledBorder.DEFAULT_JUSTIFICATION,
+                                TitledBorder.DEFAULT_POSITION,
+                                null,
+                                Color.MAGENTA
+                            )
+                            "RE" -> BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(Color.ORANGE),
+                                "RE - $executionTime ms",
+                                TitledBorder.DEFAULT_JUSTIFICATION,
+                                TitledBorder.DEFAULT_POSITION,
+                                null,
+                                Color.ORANGE
+                            )
+                            "Stopped" -> BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(Color.BLACK),
+                                "Stopped",
+                                TitledBorder.DEFAULT_JUSTIFICATION,
+                                TitledBorder.DEFAULT_POSITION,
+                                null,
+                                Color.BLACK
+                            )
                             else -> BorderFactory.createTitledBorder("Unknown Error")
                         }
                     }
 
+                    // 결과에 따라 UI 상태를 변경
+                    SwingUtilities.invokeLater {
+                        onTestCaseFinished(index, result)
+                    }
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
@@ -141,6 +132,7 @@ class TestCaseRunner(
                         testCase.errorTextArea.text = "Error during execution: ${e.message}"
                     }
                 } finally {
+                    // 다음 테스트 케이스를 실행
                     runTestCase(index + 1, testCasePanels)
                 }
             }

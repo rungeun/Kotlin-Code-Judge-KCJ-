@@ -19,7 +19,9 @@ JOptionPane.showMessageDialog(null, "inputTextArea: $inputTextArea \n outputText
 JOptionPane.showMessageDialog(null, "Debug: $errorTextArea.text", "Debug", JOptionPane.INFORMATION_MESSAGE)
   
 selectTestCase
-
+        testCaseRunner = TestCaseRunner(projectBaseDir, project) { utcNumber, result ->
+            onTestCaseFinished(result, utcNumber)
+        }
 0
        TestCaseComponents(
                 newTestCasePanel,
