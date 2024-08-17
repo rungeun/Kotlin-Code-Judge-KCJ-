@@ -11,6 +11,10 @@ fun main() = with(System.`in`.bufferedReader()) {
 }
 
 /*
+StopActionListener.kt
+
+
+
 JOptionPane.showMessageDialog(null, "inputTextArea: $inputTextArea \n outputTextArea: $outputTextArea \n  answerTextArea: $answerTextArea \n errorTextArea: $errorTextArea", "Debug", JOptionPane.INFORMATION_MESSAGE)
 JOptionPane.showMessageDialog(null, "Debug: $errorTextArea.text", "Debug", JOptionPane.INFORMATION_MESSAGE)
   

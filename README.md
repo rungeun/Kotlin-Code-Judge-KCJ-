@@ -1,7 +1,5 @@
 # Kotlin-Code-Judge-KCJ
  
-
-
 ## 변경사항
 
 ### 2024.08.07
@@ -45,35 +43,39 @@
     - 체크 박스 UI 구현
     - TC 일부 실행 기능 구현
 
-
 ### 2024.09.16
 - 완료
     - StopActionListener.kt: Stop 버튼 기능 구현
     - 실행 결과의 가독성을 높이기 위해 색상을 변경
     - 일부 변수명 변경
 
+### 2024.09.17
+- 완료
+    - UIStateManager.kt: UI 상태 관리(UIState)
+
 ## 예정
-- TC창 축소
-    - 1-1. TC레이아웃의 UiFolded상태, UiMidway상태, UiExpanded상태
-    - 1-2. 기본값은 실행전 UiMidway상태이다.
+- ~~TC창 UI 상태 관리~~
+    - ~~0-1. 기능은 파일을 분리해서 만듬~~
+    - ~~0-2. 전체 적용이 아닌 각 테스트 케이스 마다 적용이 된다.~~
     - 
-    - 2-1. UiFolded상태 (실행전후에 가능, 실행 후 결과가 AC일 경우 기본 상태) 
-    - 2-2. Delete레이아웃 까지만 존재  (display)
-    - 2-3. In탭, Out탭, Answer탭, Cerr탭을 비활성화 해둠(display: none)
-    - 2-3.. 실행후 실행 결과가 CA 일 경우 UiFolded상태로 변경
+    - ~~1-1. TC레이아웃은 UiFolded상태, UiMidway상태, UiExpanded상태인 3가지 상태가 있다~~
     - 
-    - 3-1. 실행전 UiMidway상태 (실행전에만 가능, 실행전 기본 상태)
-    - 3-2. In,Out 레이아웃까지만 존재  (display)
-    - 3-3.  Answer탭, Cerr탭을 비활성화 해둠(display: none)
-    - 3-4. UiFolded상태로 넘길 수 있다.
+    - ~~2-1. UiFolded상태 (실행전후에 가능, 실행 후 결과가 AC일 경우 기본 상태)~~
+    - ~~2-2. Delete레이아웃 까지만 존재 (display)~~
+    - ~~2-3. In탭, Out탭, Answer탭, Cerr탭을 비활성화 해둠(display: none)~~
+    - ~~2-4. 실행후 실행 결과가 AC 일 경우UiFolded상태로 변경~~
+    - ~~2-5. 실행전  uiStateButton을 누르면  UiMidway상태로 변경할 수 있다.~~
+    - ~~2-6. 실행후  uiStateButton을 누르면  UiExpanded상태로 변경할 수 있다.~~
     - 
-    - 4-1. UiExpanded상태 (실행후에만 가능)
-    - 4-2. 모든 레이아웃 존재  (display)
-    - 4-3. 실행후 실행 결과가 WA,CE,TLE 중에 하나일 경우 UiExpanded상태로 변경
-    - 4-4. UiFolded상태로 넘길 수 있다.
-
-
-
+    - ~~3-1. 실행전 UiMidway상태 (실행전에만 가능, 실행전 기본 상태)~~
+    - ~~3-2. In,Out 레이아웃까지만 존재 (display)~~
+    - ~~3-3. Answer탭, Cerr탭을 비활성화 해둠(display: none)~~
+    - ~~3-4. uiStateButton을 누르면 UiFolded상태로 변경할 수 있다.~~
+    - 
+    - ~~4-1. UiExpanded상태 (실행후에만 가능)~~
+    - ~~4-2. 모든 레이아웃 존재 (display)~~
+    - ~~4-3. 실행후 실행 결과가 WA,CE,TLE,RE,Unknown Error등 AC가 아닐 경우 UiExpanded상태로 변경~~
+    - ~~4-4. uiStateButton을 누르면 UiFolded상태로 변경할 수 있다.UI 상태 (UIState)~~
 - 아이콘 변경
 - 설정 파일
     - 입출력창 크기
@@ -99,7 +101,6 @@
 - ~~TC 전체 중지~~
 - ~~TC IN/OUT/ERROR COPY 기능~~
 - ~~Give coffee 버튼~~
-- 디파인 컴파일 제외 기능 체크 박스로 구현 
 - ~~실행 후 결과 출력~~
     - ~~judging (채점 중)~~
     - ~~AC: Accepted (맞았습니다)~~
@@ -107,4 +108,3 @@
     - ~~WA : Wrong Answer (틀렸습니다)~~
     - ~~CE : Compilation Error (컴파일 에러)~~
 - 컴파일 횟수(정답률 기록)
-    - 보류
