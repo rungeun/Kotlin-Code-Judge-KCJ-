@@ -86,15 +86,6 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
 
         row3Panel.add(selectAll)
         row3Panel.add(clearSelection)
-        // 'All' 버튼 클릭 시 모든 체크박스 선택
-        selectAll.addActionListener {
-            testCaseManager.selectAllTestCases(true)
-        }
-
-        // 'Clear' 버튼 클릭 시 모든 체크박스 해제
-        clearSelection.addActionListener {
-            testCaseManager.selectAllTestCases(false)
-        }
 
         buttonPanel.add(row1Panel)
         buttonPanel.add(row2Panel)
@@ -125,22 +116,17 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
 
         fetchButton.addActionListener(FetchTestCaseActionListener(fetchTextField, testCaseManager, fetchLabel))
 
-        testCaseRunner = TestCaseRunner(projectBaseDir, project, onExecutionFinished = {
-            // 모든 실행이 완료된 후 버튼을 복원
-            runButton.isEnabled = true
-            someRunButton.isEnabled = true
-            newTestCaseButton.isEnabled = true
-            stopButton.isEnabled = false
-        }, onTestCaseFinished = { index, result ->
-            SwingUtilities.invokeLater {
-                val executed = result != "Not Executed"
-                when (result) {
-                    "AC" -> testCaseManager.setUiStateForTestCase(index + 1, UIState.UiFolded, executed)
-                    else -> testCaseManager.setUiStateForTestCase(index + 1, UIState.UiExpanded, executed)
-                }
+        testCaseRunner = TestCaseRunner(projectBaseDir, project,
+            onExecutionFinished = {
+                runButton.isEnabled = true
+                someRunButton.isEnabled = true
+                newTestCaseButton.isEnabled = true
+                stopButton.isEnabled = false
+            },
+            onTestCaseFinished = { utcNumber, result ->
+                onTestCaseFinished(result, utcNumber)
             }
-        })
-
+        )
 
         runButton.addActionListener {
             disableButtonsDuringExecution()

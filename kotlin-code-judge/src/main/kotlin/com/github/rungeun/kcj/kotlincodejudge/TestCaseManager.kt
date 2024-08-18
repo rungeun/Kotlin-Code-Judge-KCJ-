@@ -5,6 +5,7 @@ import java.awt.Color
 import java.awt.Dimension
 import javax.swing.*
 import javax.swing.border.TitledBorder
+
 class TestCaseManager(private val testCasePanel: JPanel) {
 
     private var testCaseCount = 1
@@ -28,10 +29,9 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         return testCasePanels.filter { it.selectTestCase.isSelected }
     }
 
-    fun setUiStateForTestCase(utcNumber: Int, state: UIState, executed: Boolean) {
-        uiStateManagers[utcNumber]?.setState(state, executed)
+    fun setRunningTestCase(testCaseComponent: TestCaseComponents) {
+        runningTestCase = testCaseComponent
     }
-
 
     fun getRunningTestCase(): TestCaseComponents? {
         return getAllTestCaseComponents().find {
@@ -113,12 +113,11 @@ class TestCaseManager(private val testCasePanel: JPanel) {
             renumberTestCases()
         }
 
-        // UI state changes 버튼을 추가
+        topRowPanel.add(checkBox)
+        topRowPanel.add(testCaseLabel)
         topRowPanel.add(Box.createHorizontalGlue())
         topRowPanel.add(uiStateButton)
 
-        bottomRowPanel.add(checkBox)
-        bottomRowPanel.add(testCaseLabel)
         bottomRowPanel.add(Box.createHorizontalGlue())
         bottomRowPanel.add(copyTestCaseButton)
         bottomRowPanel.add(deleteTestCaseButton)
@@ -128,7 +127,6 @@ class TestCaseManager(private val testCasePanel: JPanel) {
 
         return panel
     }
-
 
     private fun createInputTextPanel(textArea: JTextArea, inputText: String): JPanel {
         val panel = JPanel()
@@ -244,6 +242,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         testCasePanels.removeIf { it.panel == panel }
         testCasePanel.remove(panel)
 
+        // Swing의 이벤트 디스패치 스레드에서 레이아웃을 강제로 재계산
         SwingUtilities.invokeLater {
             testCasePanel.revalidate()
             testCasePanel.repaint()
@@ -252,15 +251,14 @@ class TestCaseManager(private val testCasePanel: JPanel) {
 
     private fun renumberTestCases() {
         testCasePanels.forEachIndexed { index, testCase ->
-            val labelPanel = testCase.panel.getComponent(0) as JPanel
-            val bottomRowPanel = labelPanel.getComponent(1) as JPanel // 여기서 하위 JPanel을 가져옵니다.
-            val label = bottomRowPanel.getComponent(1) as JLabel // UTC 번호 라벨이 있는 위치를 정확히 지정
-            label.text = "UTC ${index + 1}"
+            val labelPanel = (testCase.panel.getComponent(0) as JPanel).getComponent(1)
+            if (labelPanel is JLabel) {
+                labelPanel.text = "UTC ${index + 1}"
+            }
             testCase.panel.border = BorderFactory.createTitledBorder("TestCase ${index + 1}")
         }
         testCaseCount = testCasePanels.size + 1
     }
-
 
     fun selectAllTestCases(selected: Boolean) {
         testCasePanels.forEach { it.selectTestCase.isSelected = selected }
@@ -274,4 +272,3 @@ class TestCaseManager(private val testCasePanel: JPanel) {
         return testCasePanels
     }
 }
-
