@@ -1,24 +1,60 @@
 package com.github.rungeun.kcj.kotlincodejudge
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
-import java.awt.Color // Correct import
+import java.awt.Color
 import java.io.File
 import java.io.IOException
 import javax.swing.*
 import javax.swing.border.TitledBorder
+import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 
 class TestCaseRunner(
     private val projectBaseDir: String,
     private val project: Project,
-    private val onExecutionFinished: () -> Unit, // 모든 실행이 끝난 후 호출할 콜백
-    private val onTestCaseFinished: (Int, String) -> Unit // 각 테스트 케이스가 끝날 때 호출할 콜백
+    private val onExecutionFinished: () -> Unit,
+    private val onTestCaseFinished: (Int, String) -> Unit
 ) {
     private var stopRequested = false
+    private var currentFile: VirtualFile? = null
+
+    init {
+        // 파일 에디터 및 문서 변경 리스너 등록
+        val connection = project.messageBus.connect()
+        connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, MyFileEditorManagerListener())
+        EditorFactory.getInstance().eventMulticaster.addDocumentListener(MyDocumentListener(), connection)
+        updateCurrentFile()
+    }
+
+    private inner class MyFileEditorManagerListener : FileEditorManagerListener {
+        override fun selectionChanged(event: FileEditorManagerEvent) {
+            updateCurrentFile()
+        }
+    }
+
+    private inner class MyDocumentListener : DocumentListener {
+        override fun documentChanged(event: DocumentEvent) {
+            updateCurrentFile()
+        }
+    }
+
+    private fun updateCurrentFile() {
+        val editor = FileEditorManager.getInstance(project).selectedTextEditor
+        if (editor != null) {
+            currentFile = editor.virtualFile
+        } else {
+            currentFile = null
+        }
+    }
 
     fun requestStop() {
         stopRequested = true
@@ -36,7 +72,7 @@ class TestCaseRunner(
 
     private fun runTestCase(index: Int, testCasePanels: List<TestCaseComponents>) {
         if (index >= testCasePanels.size || stopRequested) {
-            onExecutionFinished() // 모든 테스트가 끝난 후 버튼 상태를 복원
+            onExecutionFinished()
             return
         }
 
@@ -49,16 +85,27 @@ class TestCaseRunner(
             private var endTime: Long = 0
 
             override fun doInBackground(): String {
-                startTime = System.currentTimeMillis()
-
                 SwingUtilities.invokeLater {
                     testCase.panel.border = BorderFactory.createTitledBorder("Judging...")
                 }
 
-                testCase.answerTextArea.text = ""
-                testCase.errorTextArea.text = ""
+                // 현재 파일 저장
+                ApplicationManager.getApplication().invokeAndWait {
+                    currentFile?.let { file ->
+                        val document = FileDocumentManager.getInstance().getDocument(file)
+                        document?.let {
+                            FileDocumentManager.getInstance().saveDocument(it)
+                        }
+                    }
+                }
 
-                return runTestCase(input, expectedOutput, testCase.answerTextArea, testCase.errorTextArea)
+                val compileResult = compileIfNeeded(testCase.answerTextArea, testCase.errorTextArea)
+
+                if (compileResult == "SUCCESS") {
+                    startTime = System.currentTimeMillis()
+                    return runProgramWithCaching(input, expectedOutput, testCase.answerTextArea, testCase.errorTextArea)
+                }
+                return compileResult
             }
 
             override fun done() {
@@ -121,7 +168,6 @@ class TestCaseRunner(
                         }
                     }
 
-                    // 결과에 따라 UI 상태를 변경
                     SwingUtilities.invokeLater {
                         onTestCaseFinished(index, result)
                     }
@@ -132,33 +178,31 @@ class TestCaseRunner(
                         testCase.errorTextArea.text = "Error during execution: ${e.message}"
                     }
                 } finally {
-                    // 다음 테스트 케이스를 실행
                     runTestCase(index + 1, testCasePanels)
                 }
             }
         }.execute()
     }
 
-    private fun runTestCase(input: String, expectedOutput: String, answerTextArea: JTextArea, errorTextArea: JTextArea): String {
-        val editor = EditorFactory.getInstance().allEditors.firstOrNull { it.project == project } ?: return "No file open."
-        val document = editor.document
-        val virtualFile: VirtualFile = FileDocumentManager.getInstance().getFile(document) ?: return "Unable to get the VirtualFile."
-        val code = document.text
+    private fun compileIfNeeded(
+        answerTextArea: JTextArea,
+        errorTextArea: JTextArea
+    ): String {
+        val virtualFile = currentFile ?: return "No file open."
 
         val buildDir = File("$projectBaseDir/buildtc")
         if (!buildDir.exists()) {
             buildDir.mkdirs()
         }
-        val sourceFile = File(buildDir, "TempProgram.kt")
-        sourceFile.writeText(code)
+
+        val jarFile = File(buildDir, "TempProgram.jar")
 
         return try {
             val ideaHome = PathManager.getHomePath() ?: throw IOException("IntelliJ IDEA installation path not found.")
             val kotlincPath = "$ideaHome/plugins/Kotlin/kotlinc/bin/kotlinc.bat"
-            val jarFile = File(buildDir, "TempProgram.jar")
 
-            if (!jarFile.exists() || jarFile.lastModified() < sourceFile.lastModified()) {
-                val compileProcess = ProcessBuilder(kotlincPath, sourceFile.absolutePath, "-include-runtime", "-d", jarFile.absolutePath)
+            if (!jarFile.exists() || jarFile.lastModified() < virtualFile.timeStamp) {
+                val compileProcess = ProcessBuilder(kotlincPath, virtualFile.path, "-include-runtime", "-d", jarFile.absolutePath)
                     .directory(buildDir)
                     .redirectErrorStream(true)
                     .start()
@@ -169,45 +213,53 @@ class TestCaseRunner(
                     errorTextArea.text = "Compilation Errors:\n$errorOutput"
                     return "CE"
                 }
+                return "SUCCESS"
             }
 
-            val runProcess = ProcessBuilder("java", "-jar", jarFile.absolutePath)
-                .directory(buildDir)
-                .redirectInput(ProcessBuilder.Redirect.PIPE)
-                .redirectOutput(File(buildDir, "TempProgramOutput.txt"))
-                .redirectError(File(buildDir, "TempProgramErr.txt"))
-                .start()
-
-            runProcess.outputStream.bufferedWriter().use { writer ->
-                writer.write(input)
-            }
-            runProcess.waitFor()
-
-            val errOutput = File(buildDir, "TempProgramErr.txt").readText()
-            errorTextArea.text = errOutput
-
-            val actualOutput = File(buildDir, "TempProgramOutput.txt").readText()
-
-            answerTextArea.text = actualOutput
-
-            val isRuntimeError = errOutput.isNotBlank() && errOutput.contains("Exception")
-            val isCorrect = compareOutputs(actualOutput, expectedOutput)
-
-            return when {
-                isRuntimeError -> "RE"
-                isCorrect -> "AC"
-                else -> "WA"
-            }
+            return "SUCCESS"
         } catch (e: IOException) {
             errorTextArea.text = "Error during execution: ${e.message}"
             return "CE"
         } catch (e: Exception) {
             errorTextArea.text = "Runtime Error: ${e.message}"
             return "RE"
-        } finally {
-            sourceFile.delete()
-            File(buildDir, "TempProgramOutput.txt").delete()
-            File(buildDir, "TempProgramErr.txt").delete()
+        }
+    }
+
+    private fun runProgramWithCaching(
+        input: String,
+        expectedOutput: String,
+        answerTextArea: JTextArea,
+        errorTextArea: JTextArea
+    ): String {
+        val buildDir = File("$projectBaseDir/buildtc")
+        val jarFile = File(buildDir, "TempProgram.jar")
+
+        val runProcess = ProcessBuilder("java", "-jar", jarFile.absolutePath)
+            .directory(jarFile.parentFile)
+            .redirectInput(ProcessBuilder.Redirect.PIPE)
+            .redirectOutput(File(jarFile.parentFile, "TempProgramOutput.txt"))
+            .redirectError(File(jarFile.parentFile, "TempProgramErr.txt"))
+            .start()
+
+        runProcess.outputStream.bufferedWriter().use { writer ->
+            writer.write(input)
+        }
+        runProcess.waitFor()
+
+        val errOutput = File(jarFile.parentFile, "TempProgramErr.txt").readText()
+        errorTextArea.text = errOutput
+
+        val actualOutput = File(jarFile.parentFile, "TempProgramOutput.txt").readText()
+        answerTextArea.text = actualOutput
+
+        val isRuntimeError = errOutput.isNotBlank() && errOutput.contains("Exception")
+        val isCorrect = compareOutputs(actualOutput, expectedOutput)
+
+        return when {
+            isRuntimeError -> "RE"
+            isCorrect -> "AC"
+            else -> "WA"
         }
     }
 
