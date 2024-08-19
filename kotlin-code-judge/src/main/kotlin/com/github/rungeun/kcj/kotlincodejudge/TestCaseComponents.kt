@@ -6,9 +6,10 @@ import javax.swing.JTextArea
 
 data class TestCaseComponents(
     val panel: JPanel,
-    val selectTestCase: JCheckBox,  // 체크박스를 추가합니다.
+    val selectTestCase: JCheckBox,
     val inputTextArea: JTextArea,
     val outputTextArea: JTextArea,
     val answerTextArea: JTextArea,
-    val errorTextArea: JTextArea
+    val errorTextArea: JTextArea,
+    val uiStateManager: UIStateManager // UI 상태 관리 객체 추가
 )

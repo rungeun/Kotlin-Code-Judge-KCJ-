@@ -1,3 +1,0 @@
-Exception in thread "main" java.lang.NullPointerException: readLine(...) must not be null
-	at MainedKt.main(Mained.kt:2)
-	at MainedKt.main(Mained.kt)

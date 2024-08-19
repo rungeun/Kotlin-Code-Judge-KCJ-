@@ -164,7 +164,20 @@ class TestCaseRunner(
                                 null,
                                 Color.BLACK
                             )
-                            else -> BorderFactory.createTitledBorder("Unknown Error")
+                            else -> BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(JBColor.GRAY),
+                                "Unknown Error",
+                                TitledBorder.DEFAULT_JUSTIFICATION,
+                                TitledBorder.DEFAULT_POSITION,
+                                null,
+                                JBColor.GRAY
+                            )
+                        }
+
+                        // UI 상태 관리 (AC인 경우 Folded, 다른 경우 Expanded)
+                        when (result) {
+                            "AC" -> testCase.uiStateManager.setState(UIState.UiFolded)
+                            else -> testCase.uiStateManager.setState(UIState.UiExpanded)
                         }
                     }
 
@@ -174,13 +187,22 @@ class TestCaseRunner(
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
-                        testCase.panel.border = BorderFactory.createTitledBorder("Error")
+                        testCase.panel.border = BorderFactory.createTitledBorder(
+                            BorderFactory.createLineBorder(Color.BLACK),
+                            "Error",
+                            TitledBorder.DEFAULT_JUSTIFICATION,
+                            TitledBorder.DEFAULT_POSITION,
+                            null,
+                            Color.BLACK
+                        )
                         testCase.errorTextArea.text = "Error during execution: ${e.message}"
+                        testCase.uiStateManager.setState(UIState.UiExpanded)
                     }
                 } finally {
                     runTestCase(index + 1, testCasePanels)
                 }
             }
+
         }.execute()
     }
 

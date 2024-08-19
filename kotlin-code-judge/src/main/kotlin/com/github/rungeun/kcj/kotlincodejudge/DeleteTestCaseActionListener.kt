@@ -28,8 +28,12 @@ class DeleteTestCaseActionListener(
 
     private fun renumberTestCases() {
         testCasePanels.forEachIndexed { index, panel ->
-            val label = (panel.getComponent(0) as JPanel).getComponent(0) as JLabel
-            label.text = "UTC ${index + 1}"
+            val topRowPanel = panel.getComponent(0) as JPanel
+            val label = topRowPanel.components.firstOrNull { it is JLabel } as? JLabel
+            label?.text = "UTC ${index + 1}"
+
+            // 패널의 테두리 제목도 업데이트
+            panel.border = javax.swing.BorderFactory.createTitledBorder("TestCase ${index + 1}")
         }
         testCaseCount = testCasePanels.size + 1 // 다음 테스트 케이스 번호 동기화
     }

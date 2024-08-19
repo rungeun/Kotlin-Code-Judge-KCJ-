@@ -51,10 +51,12 @@ class UIStateManager(
     }
 
     private fun onUiStateButtonClicked() {
-        currentState = when (currentState) {
-            UIState.UiFolded -> if (isExecuted) UIState.UiExpanded else UIState.UiMidway
-            UIState.UiMidway -> UIState.UiFolded
-            UIState.UiExpanded -> UIState.UiFolded
+        currentState = when {
+            currentState == UIState.UiFolded && isExecuted -> UIState.UiExpanded
+            currentState == UIState.UiFolded && !isExecuted -> UIState.UiMidway
+            currentState == UIState.UiMidway -> UIState.UiFolded
+            currentState == UIState.UiExpanded -> UIState.UiFolded
+            else -> currentState
         }
         applyState(currentState)
     }
