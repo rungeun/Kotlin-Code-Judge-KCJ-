@@ -51,12 +51,16 @@ class UIStateManager(
     }
 
     private fun onUiStateButtonClicked() {
-        currentState = when {
-            currentState == UIState.UiFolded && isExecuted -> UIState.UiExpanded
-            currentState == UIState.UiFolded && !isExecuted -> UIState.UiMidway
-            currentState == UIState.UiMidway -> UIState.UiFolded
-            currentState == UIState.UiExpanded -> UIState.UiFolded
-            else -> currentState
+        currentState = when (currentState) {
+            UIState.UiFolded -> {
+                if (isExecuted) {
+                    UIState.UiExpanded  // 실행 후에는 UiExpanded 상태로 전환
+                } else {
+                    UIState.UiMidway  // 실행 전에는 UiMidway 상태로 전환
+                }
+            }
+            UIState.UiMidway -> UIState.UiFolded
+            UIState.UiExpanded -> UIState.UiFolded
         }
         applyState(currentState)
     }

@@ -276,6 +276,8 @@ class TestCaseManager(private val testCasePanel: JPanel) {
     }
 
 
+
+
     fun selectAllTestCases(selected: Boolean) {
         testCasePanels.forEach { it.selectTestCase.isSelected = selected }
     }

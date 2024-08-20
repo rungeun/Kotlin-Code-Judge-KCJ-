@@ -28,7 +28,6 @@ class TestCaseRunner(
     private var currentFile: VirtualFile? = null
 
     init {
-        // 파일 에디터 및 문서 변경 리스너 등록
         val connection = project.messageBus.connect()
         connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, MyFileEditorManagerListener())
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(MyDocumentListener(), connection)
@@ -124,60 +123,65 @@ class TestCaseRunner(
 
                     SwingUtilities.invokeLater {
                         testCase.panel.border = when (result) {
-                            "AC" -> BorderFactory.createTitledBorder(
-                                BorderFactory.createLineBorder(JBColor.GREEN),
-                                "AC - $executionTime ms",
-                                TitledBorder.DEFAULT_JUSTIFICATION,
-                                TitledBorder.DEFAULT_POSITION,
-                                null,
-                                JBColor.GREEN
-                            )
-                            "WA" -> BorderFactory.createTitledBorder(
-                                BorderFactory.createLineBorder(Color.RED),
-                                "WA - $executionTime ms",
-                                TitledBorder.DEFAULT_JUSTIFICATION,
-                                TitledBorder.DEFAULT_POSITION,
-                                null,
-                                Color.RED
-                            )
-                            "CE" -> BorderFactory.createTitledBorder(
-                                BorderFactory.createLineBorder(Color.MAGENTA),
-                                "CE - $executionTime ms",
-                                TitledBorder.DEFAULT_JUSTIFICATION,
-                                TitledBorder.DEFAULT_POSITION,
-                                null,
-                                Color.MAGENTA
-                            )
-                            "RE" -> BorderFactory.createTitledBorder(
-                                BorderFactory.createLineBorder(Color.ORANGE),
-                                "RE - $executionTime ms",
-                                TitledBorder.DEFAULT_JUSTIFICATION,
-                                TitledBorder.DEFAULT_POSITION,
-                                null,
-                                Color.ORANGE
-                            )
-                            "Stopped" -> BorderFactory.createTitledBorder(
-                                BorderFactory.createLineBorder(Color.BLACK),
-                                "Stopped",
-                                TitledBorder.DEFAULT_JUSTIFICATION,
-                                TitledBorder.DEFAULT_POSITION,
-                                null,
-                                Color.BLACK
-                            )
-                            else -> BorderFactory.createTitledBorder(
-                                BorderFactory.createLineBorder(JBColor.GRAY),
-                                "Unknown Error",
-                                TitledBorder.DEFAULT_JUSTIFICATION,
-                                TitledBorder.DEFAULT_POSITION,
-                                null,
-                                JBColor.GRAY
-                            )
-                        }
-
-                        // UI 상태 관리 (AC인 경우 Folded, 다른 경우 Expanded)
-                        when (result) {
-                            "AC" -> testCase.uiStateManager.setState(UIState.UiFolded)
-                            else -> testCase.uiStateManager.setState(UIState.UiExpanded)
+                            "AC" -> {
+                                testCase.uiStateManager.setState(UIState.UiFolded, executed = true)
+                                BorderFactory.createTitledBorder(
+                                    BorderFactory.createLineBorder(JBColor.GREEN),
+                                    "AC - $executionTime ms",
+                                    TitledBorder.DEFAULT_JUSTIFICATION,
+                                    TitledBorder.DEFAULT_POSITION,
+                                    null,
+                                    JBColor.GREEN
+                                )
+                            }
+                            "WA" -> {
+                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                BorderFactory.createTitledBorder(
+                                    BorderFactory.createLineBorder(Color.RED),
+                                    "WA - $executionTime ms",
+                                    TitledBorder.DEFAULT_JUSTIFICATION,
+                                    TitledBorder.DEFAULT_POSITION,
+                                    null,
+                                    Color.RED
+                                )
+                            }
+                            "CE" -> {
+                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                BorderFactory.createTitledBorder(
+                                    BorderFactory.createLineBorder(Color.MAGENTA),
+                                    "CE - $executionTime ms",
+                                    TitledBorder.DEFAULT_JUSTIFICATION,
+                                    TitledBorder.DEFAULT_POSITION,
+                                    null,
+                                    Color.MAGENTA
+                                )
+                            }
+                            "RE" -> {
+                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                BorderFactory.createTitledBorder(
+                                    BorderFactory.createLineBorder(Color.ORANGE),
+                                    "RE - $executionTime ms",
+                                    TitledBorder.DEFAULT_JUSTIFICATION,
+                                    TitledBorder.DEFAULT_POSITION,
+                                    null,
+                                    Color.ORANGE
+                                )
+                            }
+                            "Stopped" -> {
+                                testCase.uiStateManager.setState(UIState.UiFolded, executed = true)
+                                BorderFactory.createTitledBorder(
+                                    BorderFactory.createLineBorder(Color.BLACK),
+                                    "Stopped",
+                                    TitledBorder.DEFAULT_JUSTIFICATION,
+                                    TitledBorder.DEFAULT_POSITION,
+                                    null,
+                                    Color.BLACK
+                                )
+                            }
+                            else -> {
+                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                BorderFactory.createTitledBorder("Unknown Error")
+                            }
                         }
                     }
 
@@ -187,22 +191,13 @@ class TestCaseRunner(
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
-                        testCase.panel.border = BorderFactory.createTitledBorder(
-                            BorderFactory.createLineBorder(Color.BLACK),
-                            "Error",
-                            TitledBorder.DEFAULT_JUSTIFICATION,
-                            TitledBorder.DEFAULT_POSITION,
-                            null,
-                            Color.BLACK
-                        )
+                        testCase.panel.border = BorderFactory.createTitledBorder("Error")
                         testCase.errorTextArea.text = "Error during execution: ${e.message}"
-                        testCase.uiStateManager.setState(UIState.UiExpanded)
                     }
                 } finally {
                     runTestCase(index + 1, testCasePanels)
                 }
             }
-
         }.execute()
     }
 
