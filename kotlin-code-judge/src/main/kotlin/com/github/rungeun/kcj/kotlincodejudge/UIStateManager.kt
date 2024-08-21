@@ -19,10 +19,19 @@ class UIStateManager(
 ) {
     private var currentState: UIState = UIState.UiMidway
     private var isExecuted: Boolean = false
+    private var result: String = ""
 
     init {
         applyState(currentState)
         uiStateButton.addActionListener { onUiStateButtonClicked() }
+    }
+
+    fun updateResult(newResult: String) {
+        this.result = newResult
+    }
+
+    fun getResult(): String {
+        return result
     }
 
     private fun applyState(state: UIState) {

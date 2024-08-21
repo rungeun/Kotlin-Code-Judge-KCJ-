@@ -12,6 +12,22 @@ class TestCaseManager(private val testCasePanel: JPanel) {
     private val testCasePanels = mutableListOf<TestCaseComponents>()
     private var runningTestCase: TestCaseComponents? = null
     private val uiStateManagers = mutableMapOf<Int, UIStateManager>()
+    private val testCaseComponentsList = mutableListOf<TestCaseComponents>()
+
+    fun addTestCases(testCases: List<TestCase>) {
+        testCases.forEach { testCase ->
+            addNewTestCase(testCase.input, testCase.output) // 필요한 경우 다른 필드도 추가
+        }
+    }
+    fun clearAllTestCases() {
+        // 패널에서 모든 테스트 케이스 UI 제거
+        testCasePanel.removeAll()
+        // 리스트에서 모든 테스트 케이스 제거
+        testCaseComponentsList.clear()
+        // UI 갱신
+        testCasePanel.revalidate()
+        testCasePanel.repaint()
+    }
 
     fun addTestCaseComponent(testCaseComponent: TestCaseComponents) {
         testCasePanels.add(testCaseComponent)

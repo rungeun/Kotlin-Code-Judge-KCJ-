@@ -4,8 +4,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import javax.swing.*
 import java.awt.*
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
+import javax.swing.*
 import javax.swing.border.TitledBorder
 
 class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
@@ -14,16 +16,8 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     private val outerBackgroundColor: JBColor = JBColor.GREEN
     private val innerBackgroundColor: JBColor = JBColor.WHITE
 
-    private val testCasePanel = JPanel().apply {
-        layout = BoxLayout(this, BoxLayout.Y_AXIS)
-        background = innerBackgroundColor
-        isOpaque = true
-        border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        minimumSize = Dimension(200, 300)
-    }
-
-    private val testCaseManager = TestCaseManager(testCasePanel)
-
+    private lateinit var testCaseManager: TestCaseManager
+    private lateinit var saveManager: SaveManager
     private lateinit var testCaseRunner: TestCaseRunner
     private lateinit var runButton: JButton
     private lateinit var someRunButton: JButton
@@ -31,34 +25,70 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     private lateinit var newTestCaseButton: JButton
 
     init {
+        val testCasePanel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            background = innerBackgroundColor
+            isOpaque = true
+            border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            minimumSize = Dimension(200, 300)
+        }
+
+        testCaseManager = TestCaseManager(testCasePanel)
+        saveManager = SaveManager(project, testCaseManager)
+
+        loadTestCasesFromSave()  // 파일에서 데이터 로드
+
+        saveManager.setupFileChangeListener(::onFileChanged)  // 파일 변경 시 동작할 함수 지정
+        setupAutoSaveListeners()
+
+        // UI 요소들 초기화
+        initializeUIComponents(testCasePanel)
+    }
+
+    private fun onFileChanged(newFilePath: String) {
+        // 파일 변경이 감지되면 현재 테스트 케이스들을 저장
+        saveTestCases()
+
+        // 기존 테스트 케이스들 제거
+        testCaseManager.clearAllTestCases()
+
+        // 새 파일의 테스트 케이스들을 로드
+        loadTestCasesFromSave()
+    }
+
+    private fun initializeUIComponents(testCasePanel: JPanel) {
         content.layout = BoxLayout(content, BoxLayout.Y_AXIS)
         content.background = outerBackgroundColor
 
-        val fetchPanel = JPanel()
-        fetchPanel.layout = BoxLayout(fetchPanel, BoxLayout.X_AXIS)
-        fetchPanel.background = innerBackgroundColor
-        fetchPanel.isOpaque = true
-        fetchPanel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        val fetchPanel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            background = innerBackgroundColor
+            isOpaque = true
+            border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        }
 
         val fetchLabel = JBLabel("ProblemNumber: ")
-        val fetchTextField = JTextField(7)
-        fetchTextField.preferredSize = Dimension(60, 30)
-        fetchTextField.maximumSize = Dimension(70, 30)
+        val fetchTextField = JTextField(7).apply {
+            preferredSize = Dimension(60, 30)
+            maximumSize = Dimension(70, 30)
+        }
         val fetchButton = JButton("Fetch Test Cases")
 
         fetchPanel.add(fetchLabel)
         fetchPanel.add(fetchTextField)
         fetchPanel.add(fetchButton)
 
-        val buttonPanel = JPanel()
-        buttonPanel.layout = BoxLayout(buttonPanel, BoxLayout.Y_AXIS)
-        buttonPanel.background = innerBackgroundColor
-        buttonPanel.isOpaque = true
-        buttonPanel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        val buttonPanel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            background = innerBackgroundColor
+            isOpaque = true
+            border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        }
 
-        val row1Panel = JPanel()
-        row1Panel.layout = BoxLayout(row1Panel, BoxLayout.X_AXIS)
-        row1Panel.isOpaque = false
+        val row1Panel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            isOpaque = false
+        }
         runButton = JButton("Run")
         someRunButton = JButton("Some Run")
         stopButton = JButton("Stop")
@@ -67,9 +97,10 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         row1Panel.add(someRunButton)
         row1Panel.add(stopButton)
 
-        val row2Panel = JPanel()
-        row2Panel.layout = BoxLayout(row2Panel, BoxLayout.X_AXIS)
-        row2Panel.isOpaque = false
+        val row2Panel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            isOpaque = false
+        }
         val donateButton = JButton("Give coffee :>")
         val guideButton = JButton("Guide")
         donateButton.addActionListener(GiveCoffeeActionListener())
@@ -78,9 +109,10 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         row2Panel.add(donateButton)
         row2Panel.add(guideButton)
 
-        val row3Panel = JPanel()
-        row3Panel.layout = BoxLayout(row3Panel, BoxLayout.X_AXIS)
-        row3Panel.isOpaque = false
+        val row3Panel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            isOpaque = false
+        }
         val selectAll = JButton("All")
         val clearSelection = JButton("Clear")
 
@@ -91,23 +123,25 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         buttonPanel.add(row2Panel)
         buttonPanel.add(row3Panel)
 
-        val scrollPane = JBScrollPane(testCasePanel)
-        scrollPane.verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
-        scrollPane.horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-        scrollPane.verticalScrollBar.unitIncrement = 16
+        val scrollPane = JBScrollPane(testCasePanel).apply {
+            verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+            horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+            verticalScrollBar.unitIncrement = 16
+        }
 
-        val addButtonPanel = JPanel()
-        addButtonPanel.layout = BoxLayout(addButtonPanel, BoxLayout.Y_AXIS)
-        addButtonPanel.background = innerBackgroundColor
-        addButtonPanel.isOpaque = true
-        addButtonPanel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        val addButtonPanel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            background = innerBackgroundColor
+            isOpaque = true
+            border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        }
 
         newTestCaseButton = JButton("New TestCase")
-        val newTestCasePanel = JPanel()
-        newTestCasePanel.layout = BoxLayout(newTestCasePanel, BoxLayout.X_AXIS)
-        newTestCasePanel.isOpaque = false
+        val newTestCasePanel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            isOpaque = false
+        }
         newTestCasePanel.add(newTestCaseButton)
-
 
         // 'All' 버튼 클릭 시 모든 체크박스 선택
         selectAll.addActionListener {
@@ -127,7 +161,8 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
 
         fetchButton.addActionListener(FetchTestCaseActionListener(fetchTextField, testCaseManager, fetchLabel))
 
-        testCaseRunner = TestCaseRunner(projectBaseDir, project,
+        testCaseRunner = TestCaseRunner(
+            projectBaseDir, project,
             onExecutionFinished = {
                 runButton.isEnabled = true
                 someRunButton.isEnabled = true
@@ -142,11 +177,13 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         runButton.addActionListener {
             disableButtonsDuringExecution()
             testCaseRunner.runAllTestCasesSequentially(testCaseManager.getAllTestCaseComponents())
+            saveTestCases()  // 실행 후 테스트 케이스 저장
         }
 
         someRunButton.addActionListener {
             disableButtonsDuringExecution()
             testCaseRunner.runSelectedTestCasesSequentially(testCaseManager.getSelectedTestCaseComponents())
+            saveTestCases()  // 실행 후 테스트 케이스 저장
         }
 
         stopButton.addActionListener {
@@ -188,4 +225,40 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
             else -> testCaseManager.setUiStateForTestCase(utcNumber, UIState.UiExpanded)
         }
     }
+
+    private fun loadTestCasesFromSave() {
+        val savedTestCases = saveManager.loadValues()
+        testCaseManager.addTestCases(savedTestCases)
+    }
+
+    private fun setupAutoSaveListeners() {
+        // 데이터 변경 시 자동 저장 설정
+        testCaseManager.getAllTestCaseComponents().forEach { testCase ->
+            val autoSaveListener = object : KeyAdapter() {
+                override fun keyReleased(e: KeyEvent) {
+                    saveTestCases()
+                }
+            }
+            testCase.inputTextArea.addKeyListener(autoSaveListener)
+            testCase.outputTextArea.addKeyListener(autoSaveListener)
+            testCase.answerTextArea.addKeyListener(autoSaveListener)
+            testCase.errorTextArea.addKeyListener(autoSaveListener)
+        }
+    }
+
+
+
+
+    private fun saveTestCases() {
+        saveManager.saveValues(testCaseManager.getAllTestCaseComponents().map {
+            TestCase(
+                input = it.inputTextArea.text,
+                output = it.outputTextArea.text,
+                answer = it.answerTextArea.text,
+                cerr = it.errorTextArea.text,
+                result = it.uiStateManager.getResult()  // Get the actual result
+            )
+        })
+    }
+
 }
