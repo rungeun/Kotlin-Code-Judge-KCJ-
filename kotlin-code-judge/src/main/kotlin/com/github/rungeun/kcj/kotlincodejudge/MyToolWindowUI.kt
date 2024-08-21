@@ -108,6 +108,17 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         newTestCasePanel.isOpaque = false
         newTestCasePanel.add(newTestCaseButton)
 
+
+        // 'All' 버튼 클릭 시 모든 체크박스 선택
+        selectAll.addActionListener {
+            testCaseManager.selectAllTestCases(true)
+        }
+
+        // 'Clear' 버튼 클릭 시 모든 체크박스 해제
+        clearSelection.addActionListener {
+            testCaseManager.selectAllTestCases(false)
+        }
+
         newTestCaseButton.addActionListener {
             testCaseManager.addNewTestCase()
         }

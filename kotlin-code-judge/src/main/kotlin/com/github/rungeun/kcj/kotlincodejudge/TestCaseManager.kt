@@ -257,15 +257,36 @@ class TestCaseManager(private val testCasePanel: JPanel) {
 
     private fun renumberTestCases() {
         testCasePanels.forEachIndexed { index, testCase ->
-            val labelPanel = (testCase.panel.getComponent(0) as JPanel).getComponent(1)
-            if (labelPanel is JLabel) {
-                labelPanel.text = "UTC ${index + 1}"
+            val topRowPanel = testCase.panel.getComponent(0) as JPanel
+
+            // topRowPanel 내부에서 JLabel을 찾기 위해 모든 자식 컴포넌트를 재귀적으로 탐색
+            val testCaseLabel = findLabelInPanel(topRowPanel)
+            if (testCaseLabel != null) {
+                testCaseLabel.text = "UTC ${index + 1}"
+            } else {
+                println("Warning: No JLabel found in topRowPanel for TestCase ${index + 1}")
             }
+
+            // 패널의 테두리도 업데이트
             testCase.panel.border = BorderFactory.createTitledBorder("TestCase ${index + 1}")
         }
+
+        // 다음에 생성될 테스트 케이스 번호 동기화
         testCaseCount = testCasePanels.size + 1
     }
 
+    // JPanel 내부에서 JLabel을 재귀적으로 찾는 함수
+    private fun findLabelInPanel(panel: JPanel): JLabel? {
+        for (component in panel.components) {
+            if (component is JLabel) {
+                return component
+            } else if (component is JPanel) {
+                val found = findLabelInPanel(component)
+                if (found != null) return found
+            }
+        }
+        return null
+    }
     fun setUiStateForTestCase(utcNumber: Int, state: UIState) {
         if (utcNumber < 0 || utcNumber >= testCasePanels.size) {
             println("Error: Invalid test case number: $utcNumber")
