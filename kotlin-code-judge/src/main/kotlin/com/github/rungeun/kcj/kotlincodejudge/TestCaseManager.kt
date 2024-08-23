@@ -326,4 +326,15 @@ class TestCaseManager(private val testCasePanel: JPanel) {
     fun getTestCases(): List<TestCaseComponents> {
         return testCasePanels
     }
+
+    fun updateTestCaseResult(utcNumber: Int, result: String) {
+        val testCaseComponent = testCasePanels.getOrNull(utcNumber - 1)
+        if (testCaseComponent != null) {
+            testCaseComponent.uiStateManager.updateResult(result)
+            testCaseComponent.uiStateManager.setState(UIState.UiExpanded, executed = true)
+        } else {
+            println("Error: TestCase $utcNumber not found")
+        }
+    }
+
 }

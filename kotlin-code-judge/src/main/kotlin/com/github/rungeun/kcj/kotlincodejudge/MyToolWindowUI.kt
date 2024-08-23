@@ -1,14 +1,22 @@
 package com.github.rungeun.kcj.kotlincodejudge
 
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.messages.MessageBusConnection
 import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
 import javax.swing.border.TitledBorder
+import java.io.*
 
 class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     val content: JPanel = JPanel()
@@ -23,6 +31,7 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     private lateinit var someRunButton: JButton
     private lateinit var stopButton: JButton
     private lateinit var newTestCaseButton: JButton
+    private lateinit var nowLabel: JBLabel // Now: (현재 파일명) 표시 라벨
 
     init {
         val testCasePanel = JPanel().apply {
@@ -43,9 +52,16 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
 
         // UI 요소들 초기화
         initializeUIComponents(testCasePanel)
+        updateNowLabel()  // 초기 파일명 설정
     }
 
-    private fun onFileChanged(newFilePath: String) {
+    private fun updateNowLabel() {
+        val currentFile = FileEditorManager.getInstance(project).selectedEditor?.file
+        val currentFileName = currentFile?.name ?: "No file"
+        nowLabel.text = "Now: $currentFileName"
+    }
+
+    private fun onFileChanged(newFile: VirtualFile) {
         // 파일 변경이 감지되면 현재 테스트 케이스들을 저장
         saveTestCases()
 
@@ -53,12 +69,37 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         testCaseManager.clearAllTestCases()
 
         // 새 파일의 테스트 케이스들을 로드
-        loadTestCasesFromSave()
+        loadTestCasesFromSave(newFile)
+
+        // 파일명이 변경된 경우 라벨 업데이트
+        updateNowLabelWithVirtualFile(newFile)
+    }
+
+    private fun updateNowLabelWithVirtualFile(newFile: VirtualFile) {
+        nowLabel.text = "Now: ${newFile.name}"
     }
 
     private fun initializeUIComponents(testCasePanel: JPanel) {
         content.layout = BoxLayout(content, BoxLayout.Y_AXIS)
         content.background = outerBackgroundColor
+
+        val topPanel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            background = innerBackgroundColor
+            isOpaque = true
+            border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        }
+
+        nowLabel = JBLabel("Now: ").apply {
+            foreground = JBColor.BLACK
+        }
+
+        topPanel.add(nowLabel)
+        topPanel.add(Box.createHorizontalGlue())
+
+        content.add(topPanel)
+
+        // 나머지 UI 초기화 코드
 
         val fetchPanel = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
@@ -226,10 +267,42 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         }
     }
 
-    private fun loadTestCasesFromSave() {
-        val savedTestCases = saveManager.loadValues()
-        testCaseManager.addTestCases(savedTestCases)
+
+    private fun loadTestCasesFromSave(newFile: VirtualFile) {
+        val savedTestCases = saveManager.loadValues(newFile)
+        if (savedTestCases.isNotEmpty()) {
+            println("Loaded ${savedTestCases.size} test cases.")  // 디버깅 메시지
+            testCaseManager.clearAllTestCases()
+            testCaseManager.addTestCases(savedTestCases)
+        } else {
+            println("No test cases found in the file.")
+        }
     }
+
+
+    private fun loadTestCasesFromSave() {
+        val currentFilePath = saveManager.getCurrentFilePath()  // 경로를 가져옴
+        if (currentFilePath != null) {
+            val virtualFile = VirtualFileManager.getInstance().findFileByUrl("file://$currentFilePath")
+            if (virtualFile != null) {
+                val savedTestCases = saveManager.loadValues(virtualFile)
+                if (savedTestCases.isNotEmpty()) {
+                    println("Loaded ${savedTestCases.size} test cases.")  // 디버깅 메시지
+                    testCaseManager.clearAllTestCases()
+                    testCaseManager.addTestCases(savedTestCases)
+                } else {
+                    println("No test cases found in the file.")
+                }
+            } else {
+                println("VirtualFile not found for the current file path.")
+            }
+        } else {
+            println("No current file found to load test cases from.")
+        }
+    }
+
+
+
 
     private fun setupAutoSaveListeners() {
         // 데이터 변경 시 자동 저장 설정
@@ -247,18 +320,16 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
     }
 
 
-
-
     private fun saveTestCases() {
-        saveManager.saveValues(testCaseManager.getAllTestCaseComponents().map {
+        saveManager.saveTestCases(testCaseManager.getAllTestCaseComponents().map {
             TestCase(
                 input = it.inputTextArea.text,
                 output = it.outputTextArea.text,
                 answer = it.answerTextArea.text,
                 cerr = it.errorTextArea.text,
-                result = it.uiStateManager.getResult()  // Get the actual result
+                result = it.uiStateManager.getResult()  // 실제 결과 가져오기
             )
         })
-    }
+    }   
 
 }

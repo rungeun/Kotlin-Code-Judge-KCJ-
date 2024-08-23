@@ -3,6 +3,7 @@ package com.github.rungeun.kcj.kotlincodejudge
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
@@ -22,37 +23,30 @@ data class TestCase(
 class SaveManager(private val project: Project, private val testCaseManager: TestCaseManager) {
     private val connection: MessageBusConnection = project.messageBus.connect()
 
-    fun setupFileChangeListener(onFileChanged: (String) -> Unit) {
+    // Method to set up a file change listener
+    fun setupFileChangeListener(onFileChanged: (VirtualFile) -> Unit) {
         connection.subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
             override fun after(events: List<VFileEvent>) {
                 for (event in events) {
                     val virtualFile: VirtualFile? = event.file
                     if (virtualFile != null && virtualFile == FileEditorManager.getInstance(project).selectedEditor?.file) {
-                        onFileChanged(virtualFile.path)
+                        onFileChanged(virtualFile)
                     }
                 }
             }
         })
     }
 
-    // 현재 열려 있는 파일의 절대 경로를 가져오는 메서드
-    private fun getCurrentFilePath(): String? {
-        val editor = FileEditorManager.getInstance(project).selectedTextEditor
-        if (editor == null) {
-            println("No editor found")
-            return null
-        }
+    // Method to get the current file path
+    fun getCurrentFilePath(): String? {
+        val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return null
         val document = editor.document
-        val file = FileDocumentManager.getInstance().getFile(document)
-        if (file == null) {
-            println("No file found for document")
-            return null
-        }
+        val file = FileDocumentManager.getInstance().getFile(document) ?: return null
         return file.canonicalPath
     }
 
     // 입력 값과 실행 출력 값을 저장하는 메서드
-    fun saveValues(testCases: List<TestCase>) {
+    fun saveTestCases(testCases: List<TestCase>) {
         try {
             val currentFilePath = getCurrentFilePath()
 
@@ -71,70 +65,72 @@ class SaveManager(private val project: Project, private val testCaseManager: Tes
                 }
             }
         } catch (e: IOException) {
-            JOptionPane.showMessageDialog(null, "Failed to save values: ${e.message}")
+            JOptionPane.showMessageDialog(null, "Failed to save test cases: ${e.message}")
         }
     }
 
-    fun loadValues(): List<TestCase> {
+    // Method to load test cases from a file
+    fun loadValues(file: VirtualFile): List<TestCase> {
         val testCaseList = mutableListOf<TestCase>()
-        val currentFilePath = getCurrentFilePath()
 
-        if (currentFilePath != null) {
-            val saveFile = File(currentFilePath.replace(".kt", ".txt"))
+        try {
+            val inputStream = file.inputStream
+            val reader = BufferedReader(InputStreamReader(inputStream))
 
-            if (saveFile.exists()) {
-                try {
-                    BufferedReader(FileReader(saveFile)).use { reader ->
-                        var currentTestCase: TestCase? = null
-                        var currentSection: String? = null
+            var currentTestCase: TestCase? = null
+            var currentSection: String? = null
 
-                        reader.forEachLine { line ->
-                            when {
-                                line.startsWith("TC") -> {
-                                    currentTestCase?.let { testCaseList.add(it) }
-                                    currentTestCase = TestCase()
-                                }
-                                line.startsWith("Input:") -> currentSection = "Input"
-                                line.startsWith("Output:") -> currentSection = "Output"
-                                line.startsWith("Answer:") -> currentSection = "Answer"
-                                line.startsWith("Cerr:") -> currentSection = "Cerr"
-                                line.startsWith("RESULT =") -> {
-                                    currentTestCase?.result = line.substringAfter("RESULT = ").removeSuffix(";")
-                                    currentSection = null
-                                }
-                                currentSection != null && currentTestCase != null -> {
-                                    when (currentSection) {
-                                        "Input" -> currentTestCase!!.input += if (currentTestCase!!.input.isEmpty()) line else "\n$line"
-                                        "Output" -> currentTestCase!!.output += if (currentTestCase!!.output.isEmpty()) line else "\n$line"
-                                        "Answer" -> currentTestCase!!.answer += if (currentTestCase!!.answer.isEmpty()) line else "\n$line"
-                                        "Cerr" -> currentTestCase!!.cerr += if (currentTestCase!!.cerr.isEmpty()) line else "\n$line"
-                                    }
+            reader.useLines { lines ->
+                lines.forEach { line ->
+                    when {
+                        line.startsWith("TC") -> {
+                            currentTestCase?.let { testCaseList.add(it) }
+                            currentTestCase = TestCase()
+                        }
+                        line.startsWith("Input:") -> currentSection = "Input"
+                        line.startsWith("Output:") -> currentSection = "Output"
+                        line.startsWith("Answer:") -> currentSection = "Answer"
+                        line.startsWith("Cerr:") -> currentSection = "Cerr"
+                        line.startsWith("RESULT =") -> {
+                            currentTestCase?.result = line.substringAfter("RESULT = ").removeSuffix(";")
+                            currentSection = null
+                        }
+                        currentSection != null -> {
+                            // Safely unwrap currentTestCase before using it
+                            val testCase = currentTestCase
+                            if (testCase != null) {
+                                when (currentSection) {
+                                    "Input" -> testCase.input += if (testCase.input.isEmpty()) line else "\n$line"
+                                    "Output" -> testCase.output += if (testCase.output.isEmpty()) line else "\n$line"
+                                    "Answer" -> testCase.answer += if (testCase.answer.isEmpty()) line else "\n$line"
+                                    "Cerr" -> testCase.cerr += if (testCase.cerr.isEmpty()) line else "\n$line"
                                 }
                             }
                         }
-                        currentTestCase?.let { testCaseList.add(it) }
                     }
-                } catch (e: IOException) {
-                    JOptionPane.showMessageDialog(null, "Failed to load values: ${e.message}")
                 }
             }
+            currentTestCase?.let { testCaseList.add(it) }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            JOptionPane.showMessageDialog(null, "Failed to load values: ${e.message}")
         }
 
         return testCaseList
     }
 
-    // 파일 변경을 감지하는 리스너 설정
-    fun setupFileChangeListener() {
-        connection.subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
-            override fun after(events: List<VFileEvent>) {
-                for (event in events) {
-                    val virtualFile: VirtualFile? = event.file
+    // Overloaded method to load test cases based on the current file path
+    fun loadValues(): List<TestCase> {
+        val currentFilePath = getCurrentFilePath() ?: return emptyList()
+        val saveFile = File(currentFilePath.replace(".kt", ".txt"))
 
-                    if (virtualFile != null && virtualFile == FileEditorManager.getInstance(project).selectedEditor?.file) {
-                        testCaseManager.addTestCases(loadValues()) // 수정된 부분
-                    }
-                }
-            }
-        })
+        // Use LocalFileSystem to find the VirtualFile
+        val virtualFile = LocalFileSystem.getInstance().findFileByIoFile(saveFile)
+        return if (virtualFile != null && virtualFile.exists()) {
+            loadValues(virtualFile)
+        } else {
+            emptyList()
+        }
     }
 }
