@@ -1,5 +1,9 @@
-package com.github.rungeun.kcj.kotlincodejudge
+/*
+package com.github.rungeun.kcj.kotlincodejudge.view
 
+import com.github.rungeun.kcj.kotlincodejudge.*
+import com.github.rungeun.kcj.kotlincodejudge.controller.GiveCoffeeActionListener
+import com.github.rungeun.kcj.kotlincodejudge.controller.GuideActionListener
 import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
@@ -189,3 +193,4 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         }
     }
 }
+*/

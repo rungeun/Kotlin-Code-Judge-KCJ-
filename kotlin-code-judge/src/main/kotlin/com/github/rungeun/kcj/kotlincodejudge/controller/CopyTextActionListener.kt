@@ -1,11 +1,12 @@
-package com.github.rungeun.kcj.kotlincodejudge
+package com.github.rungeun.kcj.kotlincodejudge.controller
 
 import javax.swing.JButton
 import javax.swing.Timer
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 
-class CopyTextActionListener(private val button: JButton, private val textProvider: () -> String) : java.awt.event.ActionListener {
+class CopyTextActionListener(private val button: JButton, private val textProvider: () -> String) :
+    java.awt.event.ActionListener {
     private var timer: Timer? = null
 
     override fun actionPerformed(e: java.awt.event.ActionEvent?) {
