@@ -1,4 +1,3 @@
-/*
 package com.github.rungeun.kcj.kotlincodejudge
 
 import com.intellij.openapi.application.ApplicationManager
@@ -287,5 +286,3 @@ class TestCaseRunner(
         return normalizedActualOutput == normalizedExpectedOutput
     }
 }
-
- */

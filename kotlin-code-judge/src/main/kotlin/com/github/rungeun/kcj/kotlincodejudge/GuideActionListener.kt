@@ -1,4 +1,4 @@
-package com.github.rungeun.kcj.kotlincodejudge.controller
+package com.github.rungeun.kcj.kotlincodejudge
 
 import java.awt.Desktop
 import java.awt.event.ActionEvent

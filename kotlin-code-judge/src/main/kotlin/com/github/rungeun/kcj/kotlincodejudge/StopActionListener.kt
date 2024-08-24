@@ -8,7 +8,7 @@ import javax.swing.JOptionPane
 import javax.swing.SwingUtilities
 
 class StopButtonActionListener(
-  //  private val testCaseRunner: TestCaseRunner,
+    private val testCaseRunner: TestCaseRunner,
     private val testCaseManager: TestCaseManager,
     private val runButton: JButton,
     private val someRunButton: JButton,

@@ -28,7 +28,7 @@
     <!-- 도구 창 확장 포인트 등록 -->
     <toolWindow id="KCJ: Kotlin Code Judge"
                 anchor="left"
-                factoryClass="com.github.rungeun.kcj.kotlincodejudge.view.MainToolWindowFactory"
+                factoryClass="com.github.rungeun.kcj.kotlincodejudge.MyToolWindowFactory"
                 icon="/META-INF/pluginIcon.svg"/>
   </extensions>
 </idea-plugin>
