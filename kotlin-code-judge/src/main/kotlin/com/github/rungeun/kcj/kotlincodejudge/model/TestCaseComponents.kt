@@ -11,5 +11,5 @@ data class TestCaseComponents(
     val outputTextArea: JTextArea,
     val answerTextArea: JTextArea,
     val errorTextArea: JTextArea,
-    val uiStateManager: UIStateManager
+    val uiStateManager: UIStateManager?
 )

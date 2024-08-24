@@ -1,3 +1,4 @@
+/*
 package com.github.rungeun.kcj.kotlincodejudge.view
 
 import com.github.rungeun.kcj.kotlincodejudge.*
@@ -192,3 +193,4 @@ class MyToolWindowUI(val projectBaseDir: String, val project: Project) {
         }
     }
 }
+*/

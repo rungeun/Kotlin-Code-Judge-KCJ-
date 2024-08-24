@@ -5,7 +5,7 @@ import java.awt.Color
 
 object Colors {
     //val a: JBColor = JBColor(라이트 모드, 다크 모드)
-    val outerBackground: JBColor = JBColor(Color.GREEN, Color.GREEN)
+    val outerBackground: JBColor = JBColor(Color.LIGHT_GRAY, Color.GREEN)
     val innerBackground: JBColor = JBColor(Color.WHITE, Color.WHITE)
 
     // 추가로 필요한 색상 정의

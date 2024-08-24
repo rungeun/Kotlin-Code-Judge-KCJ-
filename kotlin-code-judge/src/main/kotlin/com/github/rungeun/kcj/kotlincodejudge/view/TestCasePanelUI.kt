@@ -1,116 +1,101 @@
 package com.github.rungeun.kcj.kotlincodejudge.view
 
-import com.github.rungeun.kcj.kotlincodejudge.TestCaseComponents
-import com.github.rungeun.kcj.kotlincodejudge.UIStateManager
 import javax.swing.*
-import java.awt.Color
-import com.intellij.ui.components.JBScrollPane
 import java.awt.Dimension
+import com.intellij.ui.components.JBScrollPane
 
-class TestCasePanelUI {
-    // 각각의 텍스트 패널을 생성하는 함수
-    private fun createTextPanel(labelText: String, textArea: JTextArea, initialText: String = ""): JPanel {
-        textArea.text = initialText
+class TestCasePanelUI(testCaseNumber: Int) {
 
-        val copyButton = JButton("Copy").apply {
+    // UI 요소 선언
+    val testCasePanel: JPanel = JPanel()
+    val selectTestCase: JCheckBox = JCheckBox()
+    val deleteTestCase: JButton = JButton("Delete")
+    val uiStateButton: JButton = JButton("UI state changes")
+
+    val inputTextArea: JTextArea = JTextArea(3, 5)
+    val outputTextArea: JTextArea = JTextArea(3, 5)
+    val answerTextArea: JTextArea = JTextArea(3, 5)
+    val errorTextArea: JTextArea = JTextArea(3, 5)
+
+    val inputCopyButton: JButton = JButton("Copy")
+    val outputCopyButton: JButton = JButton("Copy")
+    val answerCopyButton: JButton = JButton("Copy")
+    val errorCopyButton: JButton = JButton("Copy")
+
+    val inputScrollPane: JBScrollPane
+    val outputScrollPane: JBScrollPane
+    val answerScrollPane: JBScrollPane
+    val errorScrollPane: JBScrollPane
+
+    val utcLabel: JLabel = JLabel("UTC $testCaseNumber")
+    val inputLabel: JLabel = JLabel("In")
+    val outputLabel: JLabel = JLabel("Out")
+    val answerLabel: JLabel = JLabel("Answer")
+    val errorLabel: JLabel = JLabel("Cerr")
+
+    init {
+        // TestCase 패널 설정
+        testCasePanel.apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            border = BorderFactory.createTitledBorder("TestCase $testCaseNumber")
+        }
+
+        // utcLabel의 폰트 크기 조정
+        utcLabel.apply {
+            font = utcLabel.font.deriveFont(utcLabel.font.size2D + 4f)
+        }
+
+        // copy 버튼 설정
+        inputCopyButton.apply {
+            isOpaque = false                            // 배경을 투명하게
+            border = BorderFactory.createEmptyBorder()  // 테두리 제거
+        }
+        outputCopyButton.apply {
             isOpaque = false
-            background = Color(0, 0, 0, 0)
+            border = BorderFactory.createEmptyBorder()
+        }
+        answerCopyButton.apply {
+            isOpaque = false
+            border = BorderFactory.createEmptyBorder()
+        }
+        errorCopyButton.apply {
+            isOpaque = false
             border = BorderFactory.createEmptyBorder()
         }
 
-        val labelPanel = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.X_AXIS)
-            add(JLabel(labelText))
-            add(Box.createHorizontalGlue())
-            add(copyButton)
+        // ScrollPane 초기화 및 설정
+        inputScrollPane = JBScrollPane(inputTextArea).apply {
+            preferredSize = Dimension(120, 60)
+            maximumSize = Dimension(Int.MAX_VALUE, 60)
         }
-
-        val scrollPane = JBScrollPane(textArea).apply {
+        outputScrollPane = JBScrollPane(outputTextArea).apply {
+            preferredSize = Dimension(120, 60)
+            maximumSize = Dimension(Int.MAX_VALUE, 60)
+        }
+        answerScrollPane = JBScrollPane(answerTextArea).apply {
+            preferredSize = Dimension(120, 60)
+            maximumSize = Dimension(Int.MAX_VALUE, 60)
+        }
+        errorScrollPane = JBScrollPane(errorTextArea).apply {
             preferredSize = Dimension(120, 60)
             maximumSize = Dimension(Int.MAX_VALUE, 60)
         }
 
-        return JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            add(labelPanel)
-            add(scrollPane)
+        answerTextArea.apply {
+            isEditable = false
+            lineWrap = true
+            wrapStyleWord = true
         }
-    }
-
-    // 테스트 케이스 패널을 생성하는 함수
-    fun createTestCasePanel(
-        testCaseNumber: Int,
-        inputText: String,
-        outputText: String
-    ): TestCaseComponents {
-        val inputTextArea = JTextArea(3, 5)
-        val outputTextArea = JTextArea(3, 5)
-        val answerTextArea = JTextArea(3, 5)
-        val errorTextArea = JTextArea(3, 5)
-        val selectTestCase = JCheckBox()
-        val uiStateButton = JButton("UI state changes")
-
-        val testCasePanel = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            border = BorderFactory.createTitledBorder("TestCase $testCaseNumber")
-            add(createTestCaseRow1Panel(testCaseNumber, selectTestCase, uiStateButton))
-            add(createTextPanel("In", inputTextArea, inputText))
-            add(createTextPanel("Out", outputTextArea, outputText))
-            add(createTextPanel("Answer", answerTextArea))
-            add(createTextPanel("Cerr", errorTextArea))
+        errorTextArea.apply {
+            isEditable = false
+            lineWrap = true
+            wrapStyleWord = true
         }
 
-        val uiStateManager = UIStateManager(
-            testCasePanel,
-            createTextPanel("In", inputTextArea, inputText),
-            createTextPanel("Out", outputTextArea, outputText),
-            createTextPanel("Answer", answerTextArea),
-            createTextPanel("Cerr", errorTextArea),
-            uiStateButton
-        )
-
-        return TestCaseComponents(
-            testCasePanel,
-            selectTestCase,
-            inputTextArea,
-            outputTextArea,
-            answerTextArea,
-            errorTextArea,
-            uiStateManager
-        )
-    }
-
-    // 테스트 케이스의 첫 번째 행 패널을 생성하는 함수
-    private fun createTestCaseRow1Panel(
-        testCaseNumber: Int,
-        checkBox: JCheckBox,
-        uiStateButton: JButton
-    ): JPanel {
-        val testCaseLabel = JLabel("UTC $testCaseNumber")
-
-        val topRowPanel = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.X_AXIS)
-            isOpaque = false
-            add(checkBox)
-            add(testCaseLabel)
-            add(Box.createHorizontalGlue())
-            add(uiStateButton)
-        }
-
-        val deleteTestCaseButton = JButton("Delete")
-
-        val bottomRowPanel = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.X_AXIS)
-            isOpaque = false
-            add(Box.createHorizontalGlue())
-            add(deleteTestCaseButton)
-        }
-
-        return JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            isOpaque = false
-            add(topRowPanel)
-            add(bottomRowPanel)
-        }
+        // 라벨 초기화
+        inputLabel.text = "In"
+        outputLabel.text = "Out"
+        answerLabel.text = "Answer"
+        errorLabel.text = "Cerr"
     }
 }
