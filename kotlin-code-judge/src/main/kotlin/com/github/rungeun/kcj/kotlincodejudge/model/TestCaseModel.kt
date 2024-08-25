@@ -48,9 +48,6 @@ class TestCaseModel {
         uiStateManagers[utcNumber]?.setState(state)
     }
 
-    fun selectAllTestCases(selected: Boolean) {
-        testCasePanels.forEach { it.selectTestCase.isSelected = selected }
-    }
     //////////////
     fun removeTestCaseComponent(testCaseComponent: TestCaseComponents) {
         testCasePanels.remove(testCaseComponent)
