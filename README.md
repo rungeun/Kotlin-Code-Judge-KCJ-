@@ -84,6 +84,8 @@
     - New TestCase 버튼 정상 작동.
     - Fetch Test Cases 버튼 정상 작동.
     - Copy 버튼 정상 작동.
+    - Run 버튼 정상 작동.
+    - Some Run 버튼 정상 작동.
 ## 예정
 - ~~TC창 UI 상태 관리~~
     - ~~0-1. 기능은 파일을 분리해서 만듬~~
