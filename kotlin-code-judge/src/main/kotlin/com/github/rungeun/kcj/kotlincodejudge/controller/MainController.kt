@@ -41,11 +41,5 @@ class MainController(private val ui: MainToolWindowUI) {
         ui.clearSelection.addActionListener { testCaseController.selectAllTestCases(false) }
     }
 
-    private fun removeTestCaseComponent(panel: JPanel) {
-        val testCaseComponent = model.getAllTestCaseComponents().find { it.panel == panel }
-        if (testCaseComponent != null) {
-            model.removeTestCaseComponent(testCaseComponent)
-            ui.removeTestCasePanel(panel) // UI에서 패널 제거
-        }
-    }
+
 }

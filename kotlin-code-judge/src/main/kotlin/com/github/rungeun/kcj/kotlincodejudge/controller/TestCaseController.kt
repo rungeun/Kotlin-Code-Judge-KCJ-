@@ -5,17 +5,20 @@ import com.github.rungeun.kcj.kotlincodejudge.model.TestCaseModel
 import com.github.rungeun.kcj.kotlincodejudge.view.TestCasePanelUI
 import com.intellij.ui.components.JBScrollPane
 import java.awt.Dimension
-import javax.swing.JButton
-import javax.swing.JPanel
-import javax.swing.JLabel
-import javax.swing.JTextArea
-import javax.swing.BoxLayout
-import javax.swing.Box
+import javax.swing.*
 
 class TestCaseController(
     val model: TestCaseModel,
     private val ui: TestCasePanelUI
 ) {
+
+    init {
+        println("TestCasePanelUI 인스턴스: $ui")
+        println("deleteTestCaseButton 인스턴스: ${ui.deleteTestCaseButton}")
+        ui.deleteTestCaseButton.addActionListener {
+            removeTestCase(ui.testCasePanel)
+        }
+    }
 
     fun createAndAddTestCasePanel(
         testCaseNumber: Int,
@@ -26,6 +29,12 @@ class TestCaseController(
     ): TestCaseComponents {
         // 새로운 UI 요소 초기화
         val testCasePanelUI = TestCasePanelUI(testCaseNumber)
+
+        // deleteTestCaseButton에 리스너 등록
+        testCasePanelUI.deleteTestCaseButton.addActionListener {
+            println("클릭 감지 됨")
+            removeTestCase(testCasePanelUI.testCasePanel)
+        }
 
         // TextArea에 초기값 설정
         testCasePanelUI.inputTextArea.text = inputText
@@ -45,8 +54,15 @@ class TestCaseController(
             add(testCasePanelUI.uiStateButton)
         }
 
+        val topButtonPanel2 = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            add(Box.createHorizontalGlue())
+            add(testCasePanelUI.deleteTestCaseButton)
+        }
+
         // 입출력 영역 생성
         testCasePanel.add(topButtonPanel)
+        testCasePanel.add(topButtonPanel2)
         testCasePanel.add(
             createTextPanel(
                 testCasePanelUI.inputLabel,
@@ -115,14 +131,33 @@ class TestCaseController(
         }
     }
 
-    private fun removeTestCaseComponentByPanel(panel: JPanel) {
+    private fun removeTestCase(panel: JPanel) {
+        println("removeTestCase 실행됨")
         val testCaseComponent = model.getAllTestCaseComponents().find { it.panel == panel }
         if (testCaseComponent != null) {
             model.removeTestCaseComponent(testCaseComponent)
-            // UI 요소를 제거하는 메서드를 명시적으로 작성
-            ui.testCasePanel.remove(panel)
-            ui.testCasePanel.revalidate()
-            ui.testCasePanel.repaint()
+
+            val parent = panel.parent as? JPanel
+            parent?.remove(panel)
+
+            val rootContainer = parent?.topLevelAncestor as? JPanel
+            rootContainer?.revalidate()
+            rootContainer?.repaint()
+
+            renumberTestCases() // Controller에서 Model 데이터를 기반으로 View를 갱신
+        } else {
+            println("Error: testCaseComponent not found")
+        }
+    }
+
+
+
+
+    private fun renumberTestCases() {
+        println("renumberTestCases 실행됨")
+        model.getAllTestCaseComponents().forEachIndexed { index, testCase ->
+            // Model에서 가져온 데이터를 View에게 전달
+            ui.updateTestCaseLabel(testCase.panel, index + 1)
         }
     }
 
