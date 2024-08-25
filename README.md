@@ -73,6 +73,17 @@
 
 ### 2024.08.24
 - 리팩토링
+
+### 2024.08.25
+- 리팩토링
+    - feature: refactoring 진행중
+    - Guide 버튼 정상 작동.
+    - Give Coffee 버튼 정상 작동.
+    - All 버튼 정상 작동.
+    - Clear 버튼 정상 작동.
+    - New TestCase 버튼 정상 작동.
+    - Fetch Test Cases 버튼 정상 작동.
+    - Copy 버튼 정상 작동.
 ## 예정
 - ~~TC창 UI 상태 관리~~
     - ~~0-1. 기능은 파일을 분리해서 만듬~~
