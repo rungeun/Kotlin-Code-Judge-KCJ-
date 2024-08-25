@@ -12,10 +12,10 @@ class MainToolWindowUI {
     val content: JPanel = JPanel()
 
     // 연동 영역
-    private val fetchPanel = JPanel()
-    private val fetchLabel = JBLabel("ProblemNumber: ")
-    private val fetchTextField = JTextField(7)
-    private val fetchButton = JButton("Fetch Test Cases")
+    internal val fetchPanel = JPanel()
+    internal val fetchLabel = JBLabel("ProblemNumber: ")
+    internal val fetchTextField = JTextField(7)
+    internal val fetchButton = JButton("Fetch Test Cases")
 
     // 상단 기능 버튼 영역
     internal val topButtonPanel = JPanel()
@@ -33,8 +33,8 @@ class MainToolWindowUI {
 
     // +3행
     private val topButtonRow3Panel = JPanel()
-    private val selectAll = JButton("All")
-    private val clearSelection = JButton("Clear")
+    internal val selectAll = JButton("All")
+    internal val clearSelection = JButton("Clear")
 
     // 테스트 케이스 영역
     val testCasePanel = JPanel()

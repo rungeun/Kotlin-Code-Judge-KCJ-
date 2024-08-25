@@ -13,7 +13,7 @@ import javax.swing.BoxLayout
 import javax.swing.Box
 
 class TestCaseController(
-    private val model: TestCaseModel,
+    val model: TestCaseModel,
     private val ui: TestCasePanelUI
 ) {
 
@@ -124,5 +124,9 @@ class TestCaseController(
             ui.testCasePanel.revalidate()
             ui.testCasePanel.repaint()
         }
+    }
+
+    fun selectAllTestCases(select: Boolean) {
+        model.getAllTestCaseComponents().forEach { it.selectTestCase.isSelected = select }
     }
 }

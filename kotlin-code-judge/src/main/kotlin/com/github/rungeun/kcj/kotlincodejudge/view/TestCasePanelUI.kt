@@ -80,7 +80,14 @@ class TestCasePanelUI(testCaseNumber: Int) {
             preferredSize = Dimension(120, 60)
             maximumSize = Dimension(Int.MAX_VALUE, 60)
         }
-
+        inputTextArea.apply {
+            lineWrap = true
+            wrapStyleWord = true
+        }
+        outputTextArea.apply {
+            lineWrap = true
+            wrapStyleWord = true
+        }
         answerTextArea.apply {
             isEditable = false
             lineWrap = true
