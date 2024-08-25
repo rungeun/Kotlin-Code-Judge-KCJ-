@@ -1,8 +1,8 @@
 package com.github.rungeun.kcj.kotlincodejudge
 
-import javax.swing.JCheckBox
 import javax.swing.JPanel
 import javax.swing.JTextArea
+import javax.swing.JCheckBox
 
 data class TestCaseComponents(
     val panel: JPanel,
@@ -11,5 +11,5 @@ data class TestCaseComponents(
     val outputTextArea: JTextArea,
     val answerTextArea: JTextArea,
     val errorTextArea: JTextArea,
-    val uiStateManager: UIStateManager // UI 상태 관리 객체 추가
+    val uiStateManager: UIStateManager?
 )

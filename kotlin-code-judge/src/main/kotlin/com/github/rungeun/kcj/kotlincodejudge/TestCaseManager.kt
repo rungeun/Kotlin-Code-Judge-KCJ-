@@ -1,5 +1,6 @@
 package com.github.rungeun.kcj.kotlincodejudge
 
+import com.github.rungeun.kcj.kotlincodejudge.controller.CopyTextActionListener
 import com.intellij.ui.components.JBScrollPane
 import java.awt.Color
 import java.awt.Dimension
@@ -264,7 +265,7 @@ class TestCaseManager(private val testCasePanel: JPanel) {
             if (testCaseLabel != null) {
                 testCaseLabel.text = "UTC ${index + 1}"
             } else {
-                println("Warning: No JLabel found in topRowPanel for TestCase ${index + 1}")
+                println("Warning: No JLabel found in Panel for TestCase ${index + 1}")
             }
 
             // 패널의 테두리도 업데이트
