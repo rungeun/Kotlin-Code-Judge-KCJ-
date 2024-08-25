@@ -1,60 +1,30 @@
+package com.github.rungeun.kcj.kotlincodejudge.controller
 
-package com.github.rungeun.kcj.kotlincodejudge
-
+import com.github.rungeun.kcj.kotlincodejudge.TestCaseComponents
+import com.github.rungeun.kcj.kotlincodejudge.UIState
+import com.github.rungeun.kcj.kotlincodejudge.model.TestCaseModel
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import java.awt.Color
 import java.io.File
 import java.io.IOException
-import javax.swing.*
+import javax.swing.BorderFactory
+import javax.swing.SwingUtilities
+import javax.swing.SwingWorker
 import javax.swing.border.TitledBorder
-import com.intellij.openapi.editor.event.DocumentListener
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import javax.swing.JTextArea
 
-class TestCaseRunner(
+class TestCaseRunnerController(
+    private val model: TestCaseModel,
     private val projectBaseDir: String,
-    private val project: Project,
-    private val onExecutionFinished: () -> Unit,
-    private val onTestCaseFinished: (Int, String) -> Unit
+    private val project: Project
 ) {
+    private val fileTracker = FileTracker(project)
     private var stopRequested = false
-    private var currentFile: VirtualFile? = null
-
-    init {
-        val connection = project.messageBus.connect()
-        connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, MyFileEditorManagerListener())
-        EditorFactory.getInstance().eventMulticaster.addDocumentListener(MyDocumentListener(), connection)
-        updateCurrentFile()
-    }
-
-    private inner class MyFileEditorManagerListener : FileEditorManagerListener {
-        override fun selectionChanged(event: FileEditorManagerEvent) {
-            updateCurrentFile()
-        }
-    }
-
-    private inner class MyDocumentListener : DocumentListener {
-        override fun documentChanged(event: DocumentEvent) {
-            updateCurrentFile()
-        }
-    }
-
-    private fun updateCurrentFile() {
-        val editor = FileEditorManager.getInstance(project).selectedTextEditor
-        if (editor != null) {
-            currentFile = editor.virtualFile
-        } else {
-            currentFile = null
-        }
-    }
 
     fun requestStop() {
         stopRequested = true
@@ -72,7 +42,6 @@ class TestCaseRunner(
 
     private fun runTestCase(index: Int, testCasePanels: List<TestCaseComponents>) {
         if (index >= testCasePanels.size || stopRequested) {
-            onExecutionFinished()
             return
         }
 
@@ -91,7 +60,7 @@ class TestCaseRunner(
 
                 // 현재 파일 저장
                 ApplicationManager.getApplication().invokeAndWait {
-                    currentFile?.let { file ->
+                    fileTracker.getCurrentFile()?.let { file ->
                         val document = FileDocumentManager.getInstance().getDocument(file)
                         document?.let {
                             FileDocumentManager.getInstance().saveDocument(it)
@@ -101,11 +70,12 @@ class TestCaseRunner(
 
                 val compileResult = compileIfNeeded(testCase.answerTextArea, testCase.errorTextArea)
 
-                if (compileResult == "SUCCESS") {
+                return if (compileResult == "SUCCESS") {
                     startTime = System.currentTimeMillis()
-                    return runProgramWithCaching(input, expectedOutput, testCase.answerTextArea, testCase.errorTextArea)
+                    runProgramWithCaching(input, expectedOutput, testCase.answerTextArea, testCase.errorTextArea)
+                } else {
+                    compileResult
                 }
-                return compileResult
             }
 
             override fun done() {
@@ -113,7 +83,6 @@ class TestCaseRunner(
                     SwingUtilities.invokeLater {
                         testCase.panel.border = BorderFactory.createTitledBorder("Stopped")
                     }
-                    onExecutionFinished()
                     return
                 }
 
@@ -186,27 +155,21 @@ class TestCaseRunner(
                         }
                     }
 
-                    SwingUtilities.invokeLater {
-                        onTestCaseFinished(index, result)
-                    }
+                    // 다음 테스트 케이스로 넘어감
+                    runTestCase(index + 1, testCasePanels)
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
                         testCase.panel.border = BorderFactory.createTitledBorder("Error")
                         testCase.errorTextArea.text = "Error during execution: ${e.message}"
                     }
-                } finally {
-                    runTestCase(index + 1, testCasePanels)
                 }
             }
         }.execute()
     }
 
-    private fun compileIfNeeded(
-        answerTextArea: JTextArea,
-        errorTextArea: JTextArea
-    ): String {
-        val virtualFile = currentFile ?: return "No file open."
+    private fun compileIfNeeded(answerTextArea: JTextArea, errorTextArea: JTextArea): String {
+        val virtualFile = fileTracker.getCurrentFile() ?: return "No file open."
 
         val buildDir = File("$projectBaseDir/buildtc")
         if (!buildDir.exists()) {
