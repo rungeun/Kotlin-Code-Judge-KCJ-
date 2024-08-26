@@ -26,22 +26,40 @@ class TestCaseRunnerController(
     private val fileTracker = FileTracker(project)
     private var stopRequested = false
 
+    var onStopComplete: (() -> Unit)? = null
+
+    var onExecutionFinished: (() -> Unit)? = null // 콜백을 받을 수 있는 변수 추가
+
     fun requestStop() {
         stopRequested = true
     }
 
-    fun runAllTestCasesSequentially(testCasePanels: List<TestCaseComponents>) {
-        stopRequested = false
+
+    fun runAllTestCasesSequentially(testCasePanels: List<TestCaseComponents>, onFinish: () -> Unit) {
+        stopRequested = false // 실행 전 stopRequested를 초기화
+        onExecutionFinished = onFinish
         runTestCase(0, testCasePanels)
     }
 
-    fun runSelectedTestCasesSequentially(selectedTestCasePanels: List<TestCaseComponents>) {
-        stopRequested = false
+    fun runSelectedTestCasesSequentially(selectedTestCasePanels: List<TestCaseComponents>, onComplete: () -> Unit) {
+        stopRequested = false // 실행 전 stopRequested를 초기화
+        onExecutionFinished = onComplete
         runTestCase(0, selectedTestCasePanels)
     }
 
     private fun runTestCase(index: Int, testCasePanels: List<TestCaseComponents>) {
-        if (index >= testCasePanels.size || stopRequested) {
+        if (index >= testCasePanels.size) {
+            // 모든 테스트 케이스가 실행된 후에만 호출
+            SwingUtilities.invokeLater {
+                onExecutionFinished?.invoke()
+            }
+            return
+        }
+
+        if (stopRequested) {
+            SwingUtilities.invokeLater {
+                onStopComplete?.invoke() // 정지가 완료되면 콜백 호출
+            }
             return
         }
 
@@ -82,6 +100,7 @@ class TestCaseRunnerController(
                 if (stopRequested) {
                     SwingUtilities.invokeLater {
                         testCase.panel.border = BorderFactory.createTitledBorder("Stopped")
+                        onStopComplete?.invoke()  // 정지 후에만 호출
                     }
                     return
                 }
@@ -137,17 +156,6 @@ class TestCaseRunnerController(
                                     Color.ORANGE
                                 )
                             }
-                            "Stopped" -> {
-                                testCase.uiStateManager?.setState(UIState.UiFolded, executed = true)
-                                BorderFactory.createTitledBorder(
-                                    BorderFactory.createLineBorder(Color.BLACK),
-                                    "Stopped",
-                                    TitledBorder.DEFAULT_JUSTIFICATION,
-                                    TitledBorder.DEFAULT_POSITION,
-                                    null,
-                                    Color.BLACK
-                                )
-                            }
                             else -> {
                                 testCase.uiStateManager?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder("Unknown Error")
@@ -155,8 +163,9 @@ class TestCaseRunnerController(
                         }
                     }
 
-                    // 다음 테스트 케이스로 넘어감
-                    runTestCase(index + 1, testCasePanels)
+                    SwingUtilities.invokeLater {
+                        runTestCase(index + 1, testCasePanels)
+                    }
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
@@ -167,6 +176,7 @@ class TestCaseRunnerController(
             }
         }.execute()
     }
+
 
     private fun compileIfNeeded(answerTextArea: JTextArea, errorTextArea: JTextArea): String {
         val virtualFile = fileTracker.getCurrentFile() ?: return "No file open."

@@ -9,21 +9,19 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import javax.swing.BorderFactory
 import javax.swing.SwingUtilities
 
-
-class MainController(
-    private val ui: MainToolWindowUI,
-    project: Project // 이 부분에서 Project 객체를 받아옴
-) {
+class MainController(private val ui: MainToolWindowUI, project: Project) {
     private val model = TestCaseModel()
     private var testCaseController: TestCaseController
 
     private val fetchTestCaseModel = FetchTestCaseModel()
     private val fetchTestCaseController: FetchTestCaseController
 
-    // projectBaseDir과 project를 받아서 TestCaseRunnerController에 전달
     private val testCaseRunnerController = TestCaseRunnerController(model, project.basePath ?: "", project)
+
+    private var isRunning: Boolean = false
 
     init {
         val connection = project.messageBus.connect()
@@ -33,25 +31,68 @@ class MainController(
             }
         })
 
-        // 초기 파일 설정
+// 초기 파일 설정
         updateCurrentFile(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
 
-        // 초기화
-        val initialTestCasePanelUI = TestCasePanelUI(0) // 초기화용 기본 패널
+        val initialTestCasePanelUI = TestCasePanelUI(0)
         testCaseController = TestCaseController(model, initialTestCasePanelUI)
         fetchTestCaseController = FetchTestCaseController(fetchTestCaseModel, ui, testCaseController)
 
-        // runButton 액션 리스너 추가
+        // 초기 버튼 상태 설정
+        updateButtonStates(isRunning = false)
+
         ui.runButton.addActionListener {
-            val testCasePanels = model.getAllTestCaseComponents()
-            testCaseRunnerController.runAllTestCasesSequentially(testCasePanels)
+            if (!isRunning) {  // 실행 중이 아닐 때만 실행
+                println("start: Run")
+                updateButtonStates(isRunning = true)
+                val testCasePanels = model.getAllTestCaseComponents()
+                testCaseRunnerController.runAllTestCasesSequentially(testCasePanels) {
+                    updateButtonStates(isRunning = false)
+                    println("end  : Run")
+                }
+            }
         }
 
-        // someRunButton 액션 리스너 추가 - 선택된 테스트 케이스만 실행
         ui.someRunButton.addActionListener {
-            val selectedTestCasePanels = model.getAllTestCaseComponents().filter { it.selectTestCase.isSelected }
-            testCaseRunnerController.runSelectedTestCasesSequentially(selectedTestCasePanels)
+            if (!isRunning) {  // 실행 중이 아닐 때만 실행
+                println("start: SomeRun")
+                updateButtonStates(isRunning = true)
+                val selectedTestCasePanels = model.getAllTestCaseComponents().filter { it.selectTestCase.isSelected }
+                testCaseRunnerController.runSelectedTestCasesSequentially(selectedTestCasePanels) {
+                    updateButtonStates(isRunning = false)
+                    println("end  : SomeRun")
+                }
+            }
         }
+
+        ui.stopButton.addActionListener {
+            if (isRunning) {  // 실행 중일 때만 Stop 버튼 동작
+                println("start: Stop")
+                updateButtonStates(isRunning = true)
+                testCaseRunnerController.requestStop()
+
+                val runningTestCase = model.getRunningTestCase()
+                runningTestCase?.let { testCase ->
+                    SwingUtilities.invokeLater {
+                        testCase.panel.border = BorderFactory.createTitledBorder("Stopping...")
+                    }
+                }
+
+                testCaseRunnerController.onStopComplete = {
+                    runningTestCase?.let { testCase ->
+                        SwingUtilities.invokeLater {
+                            testCase.panel.border = BorderFactory.createTitledBorder("Stopped")
+                        }
+                    }
+                    updateButtonStates(isRunning = false)
+                    println("end  : Stop")
+                }
+            }
+        }
+
+
+
+
 
         ui.donateButton.addActionListener(GiveCoffeeActionListener())
         ui.guideButton.addActionListener(GuideActionListener())
@@ -61,20 +102,27 @@ class MainController(
         }
 
         ui.newTestCaseButton.addActionListener {
-            // 새로운 TestCasePanelUI와 함께 TestCaseController의 기존 인스턴스를 사용하여 테스트 케이스 추가
             val testCaseNumber = model.getAllTestCaseComponents().size + 1
             val testCasePanelUI = TestCasePanelUI(testCaseNumber)
-            testCaseController = TestCaseController(model, testCasePanelUI) // 새로운 UI로 업데이트
+            testCaseController = TestCaseController(model, testCasePanelUI)
             val newTestCasePanel = testCaseController.createAndAddTestCasePanel(
                 testCaseNumber = testCaseNumber
             ).panel
-
             ui.addTestCasePanel(newTestCasePanel)
         }
 
         ui.selectAll.addActionListener { testCaseController.selectAllTestCases(true) }
         ui.clearSelection.addActionListener { testCaseController.selectAllTestCases(false) }
     }
+
+    fun updateButtonStates(isRunning: Boolean) {
+        this.isRunning = isRunning
+        ui.runButton.isEnabled = !isRunning
+        ui.someRunButton.isEnabled = !isRunning
+        ui.stopButton.isEnabled = isRunning
+        ui.newTestCaseButton.isEnabled = !isRunning
+    }
+
     private fun updateCurrentFile(file: VirtualFile?) {
         SwingUtilities.invokeLater {
             ui.updateFileLabel(file?.name)
