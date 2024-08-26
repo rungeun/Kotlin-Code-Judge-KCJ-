@@ -8,9 +8,13 @@ import com.intellij.ui.content.ContentFactory
 
 class MainToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val projectBaseDir = project.basePath ?: ""
-        val mainToolWindowUI = MainToolWindowUI()  // View 생성
-        val mainController = MainController(mainToolWindowUI)  // Controller 생성
+        // View 생성
+        val mainToolWindowUI = MainToolWindowUI()
+
+        // Controller 생성 및 Project 객체 전달
+        val mainController = MainController(mainToolWindowUI, project)
+
+        // ToolWindow에 Content 추가
         val contentFactory = ContentFactory.getInstance()
         val content = contentFactory.createContent(mainToolWindowUI.content, "", false)
         toolWindow.contentManager.addContent(content)
