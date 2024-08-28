@@ -2,7 +2,7 @@ package com.github.rungeun.kcj.kotlincodejudge.model
 
 import com.github.rungeun.kcj.kotlincodejudge.TestCaseComponents
 import com.github.rungeun.kcj.kotlincodejudge.UIState
-import com.github.rungeun.kcj.kotlincodejudge.UIStateManager
+import com.github.rungeun.kcj.kotlincodejudge.UIStateController
 import javax.swing.BorderFactory
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -13,7 +13,7 @@ class TestCaseModel {
     private var testCaseCount = 1
     private val testCasePanels = mutableListOf<TestCaseComponents>()
     private var runningTestCase: TestCaseComponents? = null
-    private val uiStateManagers = mutableMapOf<Int, UIStateManager>()
+    private val uiStateManagers = mutableMapOf<Int, UIStateController>()
 
     fun addTestCaseComponent(testCaseComponent: TestCaseComponents) {
         testCasePanels.add(testCaseComponent)

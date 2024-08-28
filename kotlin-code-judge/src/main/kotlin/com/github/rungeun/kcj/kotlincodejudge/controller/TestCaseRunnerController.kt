@@ -113,7 +113,7 @@ class TestCaseRunnerController(
                     SwingUtilities.invokeLater {
                         testCase.panel.border = when (result) {
                             "AC" -> {
-                                testCase.uiStateManager?.setState(UIState.UiFolded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiFolded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(JBColor.GREEN),
                                     "AC - $executionTime ms",
@@ -124,7 +124,7 @@ class TestCaseRunnerController(
                                 )
                             }
                             "WA" -> {
-                                testCase.uiStateManager?.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(Color.RED),
                                     "WA - $executionTime ms",
@@ -135,7 +135,7 @@ class TestCaseRunnerController(
                                 )
                             }
                             "CE" -> {
-                                testCase.uiStateManager?.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(Color.MAGENTA),
                                     "CE - $executionTime ms",
@@ -146,7 +146,7 @@ class TestCaseRunnerController(
                                 )
                             }
                             "RE" -> {
-                                testCase.uiStateManager?.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(Color.ORANGE),
                                     "RE - $executionTime ms",
@@ -157,7 +157,7 @@ class TestCaseRunnerController(
                                 )
                             }
                             else -> {
-                                testCase.uiStateManager?.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder("Unknown Error")
                             }
                         }

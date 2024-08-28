@@ -1,6 +1,8 @@
 package com.github.rungeun.kcj.kotlincodejudge.controller
 
 import com.github.rungeun.kcj.kotlincodejudge.TestCaseComponents
+import com.github.rungeun.kcj.kotlincodejudge.UIState
+import com.github.rungeun.kcj.kotlincodejudge.UIStateController
 import com.github.rungeun.kcj.kotlincodejudge.model.TestCaseModel
 import com.github.rungeun.kcj.kotlincodejudge.view.TestCasePanelUI
 import com.intellij.ui.components.JBScrollPane
@@ -13,8 +15,6 @@ class TestCaseController(
 ) {
 
     init {
-        println("TestCasePanelUI 인스턴스: $ui")
-        println("deleteTestCaseButton 인스턴스: ${ui.deleteTestCaseButton}")
         ui.deleteTestCaseButton.addActionListener {
             removeTestCase(ui.testCasePanel)
         }
@@ -61,42 +61,36 @@ class TestCaseController(
         }
 
         // 입출력 영역 생성
+        val inputPanel = createTextPanel(testCasePanelUI.inputLabel, testCasePanelUI.inputTextArea, testCasePanelUI.inputCopyButton)
+        val outputPanel = createTextPanel(testCasePanelUI.outputLabel, testCasePanelUI.outputTextArea, testCasePanelUI.outputCopyButton)
+        val answerPanel = createTextPanel(testCasePanelUI.answerLabel, testCasePanelUI.answerTextArea, testCasePanelUI.answerCopyButton)
+        val errorPanel = createTextPanel(testCasePanelUI.errorLabel, testCasePanelUI.errorTextArea, testCasePanelUI.errorCopyButton)
+
         testCasePanel.add(topButtonPanel)
         testCasePanel.add(topButtonPanel2)
-        testCasePanel.add(
-            createTextPanel(
-                testCasePanelUI.inputLabel,
-                testCasePanelUI.inputTextArea,
-                testCasePanelUI.inputCopyButton
-            )
-        )
-        testCasePanel.add(
-            createTextPanel(
-                testCasePanelUI.outputLabel,
-                testCasePanelUI.outputTextArea,
-                testCasePanelUI.outputCopyButton
-            )
-        )
-        testCasePanel.add(
-            createTextPanel(
-                testCasePanelUI.answerLabel,
-                testCasePanelUI.answerTextArea,
-                testCasePanelUI.answerCopyButton
-            )
-        )
-        testCasePanel.add(
-            createTextPanel(
-                testCasePanelUI.errorLabel,
-                testCasePanelUI.errorTextArea,
-                testCasePanelUI.errorCopyButton
-            )
-        )
+        testCasePanel.add(inputPanel)
+        testCasePanel.add(outputPanel)
+        testCasePanel.add(answerPanel)
+        testCasePanel.add(errorPanel)
 
         // Copy 버튼에 대한 이벤트 리스너 추가
         testCasePanelUI.inputCopyButton.addActionListener(CopyTextActionListener(testCasePanelUI.inputCopyButton) { testCasePanelUI.inputTextArea.text })
         testCasePanelUI.outputCopyButton.addActionListener(CopyTextActionListener(testCasePanelUI.outputCopyButton) { testCasePanelUI.outputTextArea.text })
         testCasePanelUI.answerCopyButton.addActionListener(CopyTextActionListener(testCasePanelUI.answerCopyButton) { testCasePanelUI.answerTextArea.text })
         testCasePanelUI.errorCopyButton.addActionListener(CopyTextActionListener(testCasePanelUI.errorCopyButton) { testCasePanelUI.errorTextArea.text })
+
+        // UIStateController 초기화
+        val uiStateController = UIStateController(
+            testCasePanel = testCasePanel,
+            inputPanel = inputPanel,
+            outputPanel = outputPanel,
+            answerPanel = answerPanel,
+            errorPanel = errorPanel,
+            uiStateButton = testCasePanelUI.uiStateButton
+        )
+
+        // 초기 상태를 UiMidway로 설정
+        uiStateController.setState(UIState.UiMidway)
 
         // TestCaseComponents 객체 생성 및 반환
         val testCaseComponents = TestCaseComponents(
@@ -106,14 +100,23 @@ class TestCaseController(
             outputTextArea = testCasePanelUI.outputTextArea,
             answerTextArea = testCasePanelUI.answerTextArea,
             errorTextArea = testCasePanelUI.errorTextArea,
-            uiStateManager = null // 필요시 uiStateManager 초기화
+            uiStateController = uiStateController
         )
 
         // Model에 추가
         model.addTestCaseComponent(testCaseComponents)
 
+        // UI 갱신을 강제하여 변경 사항이 즉시 반영되도록 합니다.
+        SwingUtilities.invokeLater {
+            testCasePanel.revalidate()
+            testCasePanel.repaint()
+        }
+
         return testCaseComponents
     }
+
+
+
 
     private fun createTextPanel(label: JLabel, textArea: JTextArea, copyButton: JButton): JPanel {
         return JPanel().apply {
@@ -149,9 +152,6 @@ class TestCaseController(
             println("Error: testCaseComponent not found")
         }
     }
-
-
-
 
     private fun renumberTestCases() {
         println("renumberTestCases 실행됨")
