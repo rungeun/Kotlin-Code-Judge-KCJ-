@@ -11,20 +11,22 @@ class MainToolWindowUI {
     // UI Components (호출 받는 부분)
     val content: JPanel = JPanel()
 
+    private  val filePanel = JPanel()
+    internal val fileLabel = JBLabel("Current File: ")
     // 연동 영역
-    private val fetchPanel = JPanel()
-    private val fetchLabel = JBLabel("ProblemNumber: ")
-    private val fetchTextField = JTextField(7)
-    private val fetchButton = JButton("Fetch Test Cases")
+    private  val fetchPanel = JPanel()
+    internal val fetchLabel = JBLabel("ProblemNumber: ")
+    internal val fetchTextField = JTextField(7)
+    internal val fetchButton = JButton("Fetch Test Cases")
 
     // 상단 기능 버튼 영역
     internal val topButtonPanel = JPanel()
 
     // +1행
     private val topButtonRow1Panel = JPanel()
-    private val runButton = JButton("Run")
-    private val someRunButton = JButton("Some Run")
-    private val stopButton = JButton("Stop")
+    internal val runButton = JButton("Run")
+    internal val someRunButton = JButton("Some Run")
+    internal val stopButton = JButton("Stop")
 
     // +2행
     private val topButtonRow2Panel = JPanel()
@@ -33,8 +35,8 @@ class MainToolWindowUI {
 
     // +3행
     private val topButtonRow3Panel = JPanel()
-    private val selectAll = JButton("All")
-    private val clearSelection = JButton("Clear")
+    internal val selectAll = JButton("All")
+    internal val clearSelection = JButton("Clear")
 
     // 테스트 케이스 영역
     val testCasePanel = JPanel()
@@ -49,6 +51,16 @@ class MainToolWindowUI {
         content.apply {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
             background = Colors.outerBackground
+        }
+
+        // 현재 파일명
+        filePanel.apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            background = Colors.innerBackground
+            isOpaque = true
+            border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            add(fileLabel)
+            add(Box.createHorizontalGlue())
         }
 
         // 연동 영역
@@ -135,6 +147,8 @@ class MainToolWindowUI {
         // Adding components to the content panel
         content.apply {
             add(Box.createVerticalStrut(10))
+            add(filePanel)
+            add(Box.createVerticalStrut(10))
             add(fetchPanel)
             add(Box.createVerticalStrut(10))
             add(topButtonPanel)
@@ -151,6 +165,10 @@ class MainToolWindowUI {
         testCasePanel.add(panel)
         testCasePanel.revalidate()
         testCasePanel.repaint()
+    }
+
+    fun updateFileLabel(fileName: String?) {
+        fileLabel.text = ":Current File: ${fileName ?: "No file selected"}"
     }
 
     fun removeTestCasePanel(panel: JPanel) {

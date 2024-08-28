@@ -9,7 +9,7 @@ class TestCasePanelUI(testCaseNumber: Int) {
     // UI 요소 선언
     val testCasePanel: JPanel = JPanel()
     val selectTestCase: JCheckBox = JCheckBox()
-    val deleteTestCase: JButton = JButton("Delete")
+    val deleteTestCaseButton: JButton = JButton("Delete")
     val uiStateButton: JButton = JButton("UI state changes")
 
     val inputTextArea: JTextArea = JTextArea(3, 5)
@@ -81,6 +81,15 @@ class TestCasePanelUI(testCaseNumber: Int) {
             maximumSize = Dimension(Int.MAX_VALUE, 60)
         }
 
+        // TextArea 설정
+        inputTextArea.apply {
+            lineWrap = true
+            wrapStyleWord = true
+        }
+        outputTextArea.apply {
+            lineWrap = true
+            wrapStyleWord = true
+        }
         answerTextArea.apply {
             isEditable = false
             lineWrap = true
@@ -97,5 +106,36 @@ class TestCasePanelUI(testCaseNumber: Int) {
         outputLabel.text = "Out"
         answerLabel.text = "Answer"
         errorLabel.text = "Cerr"
+    }
+
+    fun removeTestCasePanel(panel: JPanel) {
+        testCasePanel.remove(panel)
+        SwingUtilities.invokeLater {
+            testCasePanel.revalidate()
+            testCasePanel.repaint()
+        }
+    }
+
+    fun updateTestCaseLabel(panel: JPanel, testCaseNumber: Int) {
+        val topRowPanel = panel.getComponent(0) as JPanel
+        val testCaseLabel = findLabelInPanel(topRowPanel)
+        if (testCaseLabel != null) {
+            testCaseLabel.text = "UTC $testCaseNumber"
+            panel.border = BorderFactory.createTitledBorder("TestCase $testCaseNumber")
+        } else {
+            println("Warning: No JLabel found in Panel for TestCase $testCaseNumber")
+        }
+    }
+
+    private fun findLabelInPanel(panel: JPanel): JLabel? {
+        for (component in panel.components) {
+            if (component is JLabel) {
+                return component
+            } else if (component is JPanel) {
+                val found = findLabelInPanel(component)
+                if (found != null) return found
+            }
+        }
+        return null
     }
 }

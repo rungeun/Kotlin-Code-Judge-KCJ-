@@ -1,78 +1,65 @@
-/*
-package com.github.rungeun.kcj.kotlincodejudge
+package com.github.rungeun.kcj.kotlincodejudge.controller
 
+import com.github.rungeun.kcj.kotlincodejudge.TestCaseComponents
+import com.github.rungeun.kcj.kotlincodejudge.UIState
+import com.github.rungeun.kcj.kotlincodejudge.model.TestCaseModel
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import java.awt.Color
 import java.io.File
 import java.io.IOException
-import javax.swing.*
+import javax.swing.BorderFactory
+import javax.swing.SwingUtilities
+import javax.swing.SwingWorker
 import javax.swing.border.TitledBorder
-import com.intellij.openapi.editor.event.DocumentListener
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import javax.swing.JTextArea
 
-class TestCaseRunner(
+class TestCaseRunnerController(
+    private val model: TestCaseModel,
     private val projectBaseDir: String,
-    private val project: Project,
-    private val onExecutionFinished: () -> Unit,
-    private val onTestCaseFinished: (Int, String) -> Unit
+    private val project: Project
 ) {
+    private val fileTracker = FileTracker(project)
     private var stopRequested = false
-    private var currentFile: VirtualFile? = null
 
-    init {
-        val connection = project.messageBus.connect()
-        connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, MyFileEditorManagerListener())
-        EditorFactory.getInstance().eventMulticaster.addDocumentListener(MyDocumentListener(), connection)
-        updateCurrentFile()
-    }
+    var onStopComplete: (() -> Unit)? = null
 
-    private inner class MyFileEditorManagerListener : FileEditorManagerListener {
-        override fun selectionChanged(event: FileEditorManagerEvent) {
-            updateCurrentFile()
-        }
-    }
-
-    private inner class MyDocumentListener : DocumentListener {
-        override fun documentChanged(event: DocumentEvent) {
-            updateCurrentFile()
-        }
-    }
-
-    private fun updateCurrentFile() {
-        val editor = FileEditorManager.getInstance(project).selectedTextEditor
-        if (editor != null) {
-            currentFile = editor.virtualFile
-        } else {
-            currentFile = null
-        }
-    }
+    var onExecutionFinished: (() -> Unit)? = null // 콜백을 받을 수 있는 변수 추가
 
     fun requestStop() {
         stopRequested = true
     }
 
-    fun runAllTestCasesSequentially(testCasePanels: List<TestCaseComponents>) {
-        stopRequested = false
+
+    fun runAllTestCasesSequentially(testCasePanels: List<TestCaseComponents>, onFinish: () -> Unit) {
+        stopRequested = false // 실행 전 stopRequested를 초기화
+        onExecutionFinished = onFinish
         runTestCase(0, testCasePanels)
     }
 
-    fun runSelectedTestCasesSequentially(selectedTestCasePanels: List<TestCaseComponents>) {
-        stopRequested = false
+    fun runSelectedTestCasesSequentially(selectedTestCasePanels: List<TestCaseComponents>, onComplete: () -> Unit) {
+        stopRequested = false // 실행 전 stopRequested를 초기화
+        onExecutionFinished = onComplete
         runTestCase(0, selectedTestCasePanels)
     }
 
     private fun runTestCase(index: Int, testCasePanels: List<TestCaseComponents>) {
-        if (index >= testCasePanels.size || stopRequested) {
-            onExecutionFinished()
+        if (index >= testCasePanels.size) {
+            // 모든 테스트 케이스가 실행된 후에만 호출
+            SwingUtilities.invokeLater {
+                onExecutionFinished?.invoke()
+            }
+            return
+        }
+
+        if (stopRequested) {
+            SwingUtilities.invokeLater {
+                onStopComplete?.invoke() // 정지가 완료되면 콜백 호출
+            }
             return
         }
 
@@ -91,7 +78,7 @@ class TestCaseRunner(
 
                 // 현재 파일 저장
                 ApplicationManager.getApplication().invokeAndWait {
-                    currentFile?.let { file ->
+                    fileTracker.getCurrentFile()?.let { file ->
                         val document = FileDocumentManager.getInstance().getDocument(file)
                         document?.let {
                             FileDocumentManager.getInstance().saveDocument(it)
@@ -101,19 +88,20 @@ class TestCaseRunner(
 
                 val compileResult = compileIfNeeded(testCase.answerTextArea, testCase.errorTextArea)
 
-                if (compileResult == "SUCCESS") {
+                return if (compileResult == "SUCCESS") {
                     startTime = System.currentTimeMillis()
-                    return runProgramWithCaching(input, expectedOutput, testCase.answerTextArea, testCase.errorTextArea)
+                    runProgramWithCaching(input, expectedOutput, testCase.answerTextArea, testCase.errorTextArea)
+                } else {
+                    compileResult
                 }
-                return compileResult
             }
 
             override fun done() {
                 if (stopRequested) {
                     SwingUtilities.invokeLater {
                         testCase.panel.border = BorderFactory.createTitledBorder("Stopped")
+                        onStopComplete?.invoke()  // 정지 후에만 호출
                     }
-                    onExecutionFinished()
                     return
                 }
 
@@ -125,7 +113,7 @@ class TestCaseRunner(
                     SwingUtilities.invokeLater {
                         testCase.panel.border = when (result) {
                             "AC" -> {
-                                testCase.uiStateManager.setState(UIState.UiFolded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiFolded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(JBColor.GREEN),
                                     "AC - $executionTime ms",
@@ -136,7 +124,7 @@ class TestCaseRunner(
                                 )
                             }
                             "WA" -> {
-                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(Color.RED),
                                     "WA - $executionTime ms",
@@ -147,7 +135,7 @@ class TestCaseRunner(
                                 )
                             }
                             "CE" -> {
-                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(Color.MAGENTA),
                                     "CE - $executionTime ms",
@@ -158,7 +146,7 @@ class TestCaseRunner(
                                 )
                             }
                             "RE" -> {
-                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder(
                                     BorderFactory.createLineBorder(Color.ORANGE),
                                     "RE - $executionTime ms",
@@ -168,26 +156,15 @@ class TestCaseRunner(
                                     Color.ORANGE
                                 )
                             }
-                            "Stopped" -> {
-                                testCase.uiStateManager.setState(UIState.UiFolded, executed = true)
-                                BorderFactory.createTitledBorder(
-                                    BorderFactory.createLineBorder(Color.BLACK),
-                                    "Stopped",
-                                    TitledBorder.DEFAULT_JUSTIFICATION,
-                                    TitledBorder.DEFAULT_POSITION,
-                                    null,
-                                    Color.BLACK
-                                )
-                            }
                             else -> {
-                                testCase.uiStateManager.setState(UIState.UiExpanded, executed = true)
+                                testCase.uiStateController?.setState(UIState.UiExpanded, executed = true)
                                 BorderFactory.createTitledBorder("Unknown Error")
                             }
                         }
                     }
 
                     SwingUtilities.invokeLater {
-                        onTestCaseFinished(index, result)
+                        runTestCase(index + 1, testCasePanels)
                     }
 
                 } catch (e: Exception) {
@@ -195,18 +172,14 @@ class TestCaseRunner(
                         testCase.panel.border = BorderFactory.createTitledBorder("Error")
                         testCase.errorTextArea.text = "Error during execution: ${e.message}"
                     }
-                } finally {
-                    runTestCase(index + 1, testCasePanels)
                 }
             }
         }.execute()
     }
 
-    private fun compileIfNeeded(
-        answerTextArea: JTextArea,
-        errorTextArea: JTextArea
-    ): String {
-        val virtualFile = currentFile ?: return "No file open."
+
+    private fun compileIfNeeded(answerTextArea: JTextArea, errorTextArea: JTextArea): String {
+        val virtualFile = fileTracker.getCurrentFile() ?: return "No file open."
 
         val buildDir = File("$projectBaseDir/buildtc")
         if (!buildDir.exists()) {
@@ -287,5 +260,3 @@ class TestCaseRunner(
         return normalizedActualOutput == normalizedExpectedOutput
     }
 }
-
- */
