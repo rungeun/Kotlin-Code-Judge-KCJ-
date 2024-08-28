@@ -8,7 +8,7 @@ import java.net.URI
 class GiveCoffeeActionListener : ActionListener {
 
     override fun actionPerformed(e: ActionEvent) {
-        val url = "https://github.com/rungeun/Kotlin-Code-Judge-KCJ-"
+        val url = "https://www.paypal.com/paypalme/rungeun/4.95"
         if (Desktop.isDesktopSupported()) {
             try {
                 Desktop.getDesktop().browse(URI(url))
