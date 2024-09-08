@@ -11,22 +11,20 @@ class TestCaseSaver(private val fileTracker: FileTracker) {
 
     // Save test cases to a specific file
     fun saveTestCases(testCases: List<TestCaseData>) {
+        val existingData = loadTestCases() // 기존에 저장된 데이터 로드
+        if (existingData == testCases) return // 기존 데이터와 동일하면 저장하지 않음
+
         val kotlinFile = fileTracker.getCurrentFile() ?: return
         val parentDir = kotlinFile.parent
         val buildDir = File(parentDir.path, "buildc")
 
-        // 디렉토리와 파일 생성 여부를 체크하고 필요한 경우 즉시 생성
-        if (!buildDir.exists() && !buildDir.mkdirs()) {
-            println("Error: Could not create buildc directory.")
-            return
+        if (!buildDir.exists()) {
+            buildDir.mkdirs()
         }
 
         val testCaseFile = File(buildDir, "${kotlinFile.nameWithoutExtension}.txt")
 
         try {
-            if (!testCaseFile.exists()) {
-                testCaseFile.createNewFile()
-            }
             testCaseFile.writeText(testCases.joinToString("\n\n") { it.formatToSave() })
         } catch (e: IOException) {
             println("Error saving test cases: ${e.message}")
@@ -35,6 +33,7 @@ class TestCaseSaver(private val fileTracker: FileTracker) {
 
     // Load test cases from the file associated with the current Kotlin file
     fun loadTestCases(): List<TestCaseData> {
+        println("loadTestCases called")
         val kotlinFile = fileTracker.getCurrentFile() ?: return emptyList()
         val parentDir = kotlinFile.parent
         val buildDir = File(parentDir.path, "buildc")

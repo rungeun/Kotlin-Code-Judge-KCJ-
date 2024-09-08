@@ -49,11 +49,22 @@ class TestCaseModel {
     }
 
     //////////////
+// TestCaseModel.kt
+
+    // TestCaseComponent 제거 메서드 수정
     fun removeTestCaseComponent(testCaseComponent: TestCaseComponents) {
-        testCasePanels.remove(testCaseComponent)
-        renumberTestCases() // 테스트 케이스가 제거될 때 번호를 다시 매깁니다.
+        val iterator = testCasePanels.iterator()
+        while (iterator.hasNext()) {
+            val component = iterator.next()
+            if (component == testCaseComponent) {
+                iterator.remove()  // Iterator의 remove() 메서드를 사용해 안전하게 제거
+            }
+        }
+        renumberTestCases() // 테스트 케이스 번호 재설정
     }
-    private fun renumberTestCases() {
+
+    // renumberTestCases 메서드
+    fun renumberTestCases() {
         testCasePanels.forEachIndexed { index, testCase ->
             val topRowPanel = testCase.panel.getComponent(0) as JPanel
             val testCaseLabel = findLabelInPanel(topRowPanel)
@@ -65,6 +76,7 @@ class TestCaseModel {
             testCase.panel.border = BorderFactory.createTitledBorder("TestCase ${index + 1}")
         }
     }
+
 
     private fun findLabelInPanel(panel: JPanel): JLabel? {
         for (component in panel.components) {

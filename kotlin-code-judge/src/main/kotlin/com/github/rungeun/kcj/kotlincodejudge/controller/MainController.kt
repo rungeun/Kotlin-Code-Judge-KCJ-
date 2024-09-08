@@ -11,6 +11,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
+import java.io.File
 import javax.swing.BorderFactory
 import javax.swing.SwingUtilities
 import javax.swing.border.TitledBorder
@@ -20,12 +21,9 @@ class MainController(private val ui: MainToolWindowUI, project: Project) {
     private val fileTracker = FileTracker(project)
     private val testCaseSaver = TestCaseSaver(fileTracker)  // TestCaseSaver 인스턴스 생성
     private var testCaseController: TestCaseController
-
     private val fetchTestCaseModel = FetchTestCaseModel()
     private val fetchTestCaseController: FetchTestCaseController
-
     private val testCaseRunnerController = TestCaseRunnerController(model, project.basePath ?: "", project)
-
     private var isRunning: Boolean = false
 
     init {
@@ -36,7 +34,6 @@ class MainController(private val ui: MainToolWindowUI, project: Project) {
             }
         })
 
-        // 초기 파일 설정
         updateCurrentFile(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
 
         // TestCaseController 인스턴스 생성 시 testCaseSaver 추가
@@ -129,17 +126,60 @@ class MainController(private val ui: MainToolWindowUI, project: Project) {
         ui.selectAll.addActionListener { testCaseController.selectAllTestCases(true) }
         ui.clearSelection.addActionListener { testCaseController.selectAllTestCases(false) }
     }
-    // MainController.kt 파일에 추가
+    private fun saveTestCases() {
+        val testCaseDataList = model.getAllTestCaseComponents().mapIndexed { index, component ->
+            val title = (component.panel.border as? TitledBorder)?.title ?: "TestCase ${index + 1}"
+            TestCaseData(
+                testCaseNumber = title.removePrefix("TestCase ").toIntOrNull() ?: index + 1,
+                input = component.inputTextArea.text.trim(),
+                output = component.outputTextArea.text.trim(),
+                answer = component.answerTextArea.text.trim(),
+                cerr = component.errorTextArea.text.trim(),
+                result = extractResultFromComponent(component)
+            )
+        }
+        testCaseSaver.saveTestCases(testCaseDataList)
+    }
+
     private fun extractResultFromComponent(component: TestCaseComponents): String {
         val answer = component.answerTextArea.text.trim()
         val output = component.outputTextArea.text.trim()
-
         return when {
-            answer == output -> "AC"  // 정답 일치
-            answer.isEmpty() -> "CE"  // 컴파일 오류
-            else -> "WA"             // 오답
+            answer == output -> "AC"
+            answer.isEmpty() -> "CE"
+            else -> "WA"
         }
     }
+
+    private fun handleFileChange() {
+        val currentFile = fileTracker.getCurrentFile() ?: return
+        println("Handling file change for: ${currentFile.name}") // 디버그 메시지 추가
+
+        // buildc 폴더 확인 및 생성
+        val parentDir = currentFile.parent
+        val buildDir = File(parentDir.path, "buildc")
+        if (!buildDir.exists()) {
+            buildDir.mkdirs()
+        }
+
+        // .txt 파일 확인
+        val testCaseFile = File(buildDir, "${currentFile.nameWithoutExtension}.txt")
+        SwingUtilities.invokeLater {
+            if (testCaseFile.exists()) {
+                // 화면의 테스트 케이스를 모두 지우고 파일에서 불러오기
+                println("Loading test cases from: ${testCaseFile.name}") // 디버그 메시지 추가
+                testCaseController.clearTestCases()
+                testCaseController.loadTestCases()
+            } else {
+                // 화면의 테스트 케이스만 모두 지우기
+                println("No test cases found, clearing current test cases.") // 디버그 메시지 추가
+                testCaseController.clearTestCases()
+            }
+            ui.content.revalidate() // UI 갱신
+            ui.content.repaint()    // UI 다시 그리기
+        }
+    }
+
 
     fun updateButtonStates(isRunning: Boolean) {
         this.isRunning = isRunning
@@ -149,9 +189,39 @@ class MainController(private val ui: MainToolWindowUI, project: Project) {
         ui.newTestCaseButton.isEnabled = !isRunning
     }
 
+    // MainController.kt
+
     private fun updateCurrentFile(file: VirtualFile?) {
+        // 파일 변경을 비동기로 처리하여 UI 멈춤 문제 해결
         SwingUtilities.invokeLater {
             ui.updateFileLabel(file?.name)
+
+            val isKotlinFile = file?.extension == "kt"
+
+            // 비동기로 버튼 활성화 및 테스트 케이스 로드 처리
+            Thread {
+                setButtonsEnabled(isKotlinFile)
+
+                if (isKotlinFile) {
+                    testCaseController.loadTestCases()  // 로드 작업 비동기 처리
+                } else {
+                    testCaseController.clearTestCases() // 불필요한 테스트 케이스 제거
+                }
+            }.start()
         }
     }
+
+    private fun setButtonsEnabled(isEnabled: Boolean) {
+        SwingUtilities.invokeLater {
+            ui.runButton.isEnabled = isEnabled
+            ui.someRunButton.isEnabled = isEnabled
+            ui.stopButton.isEnabled = isEnabled
+            ui.newTestCaseButton.isEnabled = isEnabled
+            ui.selectAll.isEnabled = isEnabled
+            ui.clearSelection.isEnabled = isEnabled
+            ui.fetchButton.isEnabled = isEnabled
+        }
+    }
+
+
 }

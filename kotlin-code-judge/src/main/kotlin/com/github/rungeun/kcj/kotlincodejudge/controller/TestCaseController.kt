@@ -16,10 +16,14 @@ class TestCaseController(
     private val ui: TestCasePanelUI,
     private val testCaseSaver: TestCaseSaver // TestCaseSaver를 통합하여 사용
 ) {
+    private var isTestCasesLoaded = false
 
     init {
         // 컨트롤러가 초기화될 때 기존 테스트 케이스를 불러옵니다.
-        loadTestCases()
+        if (!isTestCasesLoaded) {
+            loadTestCases()
+            isTestCasesLoaded = true
+        }
 
         // 삭제 버튼에 대한 리스너 추가
         ui.deleteTestCaseButton.addActionListener {
@@ -123,36 +127,24 @@ class TestCaseController(
     }
 
     private fun removeTestCase(panel: JPanel) {
-        println("removeTestCase 실행됨")
+        // model에서 해당 테스트 케이스를 안전하게 제거
         val testCaseComponent = model.getAllTestCaseComponents().find { it.panel == panel }
         if (testCaseComponent != null) {
             model.removeTestCaseComponent(testCaseComponent)
 
-            val parent = panel.parent as? JPanel
-            parent?.remove(panel)
-
-            val rootContainer = parent?.topLevelAncestor as? JPanel
-            rootContainer?.revalidate()
-            rootContainer?.repaint()
-
-            renumberTestCases() // 테스트 케이스 번호 갱신
+            SwingUtilities.invokeLater {
+                panel.parent?.remove(panel)
+                panel.parent?.revalidate()
+                panel.parent?.repaint()
+            }
         } else {
             println("Error: testCaseComponent not found")
-        }
-    }
-
-    private fun renumberTestCases() {
-        println("renumberTestCases 실행됨")
-        model.getAllTestCaseComponents().forEachIndexed { index, testCase ->
-            ui.updateTestCaseLabel(testCase.panel, index + 1)
         }
     }
 
     fun selectAllTestCases(select: Boolean) {
         model.getAllTestCaseComponents().forEach { it.selectTestCase.isSelected = select }
     }
-
-
 
     // 현재 테스트 케이스를 파일에 저장
     private fun saveTestCases() {
@@ -181,17 +173,43 @@ class TestCaseController(
         }
     }
 
-    // 파일에서 테스트 케이스를 불러오기
-    private fun loadTestCases() {
-        val loadedTestCases = testCaseSaver.loadTestCases()
+    fun loadTestCases() {
+        if (isTestCasesLoaded) return // 이미 불러왔으면 중복 호출 방지
+        clearTestCases() // 기존 테스트 케이스 제거
+        isTestCasesLoaded = true // 로드 상태 업데이트
+
+        val loadedTestCases = testCaseSaver.loadTestCases() // 저장된 테스트 케이스 불러오기
+
+        // 불러온 테스트 케이스들을 사용자 UI에 추가
         loadedTestCases.forEach { testCaseData ->
-            createAndAddTestCasePanel(
+            val testCaseComponent = createAndAddTestCasePanel(
                 testCaseNumber = testCaseData.testCaseNumber,
                 inputText = testCaseData.input,
                 outputText = testCaseData.output,
                 answerLabel = testCaseData.answer,
                 errorLabel = testCaseData.cerr
             )
+
+            // 사용자 화면에 추가
+            ui.testCasePanel.add(testCaseComponent.panel)
+            println("Panel added for TestCase: ${testCaseData.testCaseNumber}") // 디버그 로그
         }
+
+        // 모든 테스트 케이스가 추가된 후 UI를 갱신하여 사용자 화면에 반영
+        SwingUtilities.invokeLater {
+            ui.testCasePanel.revalidate()
+            ui.testCasePanel.repaint()
+            println("UI updated with loaded test cases.")
+        }
+    }
+
+    // 기존 clearTestCases 메서드를 수정하여 모든 테스트 케이스 제거 후 리페인트
+    fun clearTestCases() {
+        val componentsToRemove = model.getAllTestCaseComponents().toList() // 컬렉션 복사하여 안전하게 작업
+        componentsToRemove.forEach { component ->
+            removeTestCase(component.panel)
+        }
+        ui.testCasePanel.revalidate()
+        ui.testCasePanel.repaint()
     }
 }

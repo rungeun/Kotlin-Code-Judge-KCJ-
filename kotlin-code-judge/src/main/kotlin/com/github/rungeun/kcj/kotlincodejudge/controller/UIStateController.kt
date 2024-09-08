@@ -67,9 +67,11 @@ class UIStateController(
 
     fun setState(state: UIState, executed: Boolean = false) {
         println("Setting state to: $state with executed: $executed")
-        currentState = state
-        isExecuted = executed
-        applyState(currentState)
+        if (currentState != state || this.isExecuted != executed) {
+            currentState = state
+            isExecuted = executed
+            applyState(currentState)
+        }
     }
 
     private fun refreshUI() {

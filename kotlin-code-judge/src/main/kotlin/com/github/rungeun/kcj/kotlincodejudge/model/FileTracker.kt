@@ -13,6 +13,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 class FileTracker(private val project: Project) {
 
     private var currentFile: VirtualFile? = null
+    var onFileChanged: (() -> Unit)? = null
 
     init {
         val connection = project.messageBus.connect()
@@ -23,12 +24,14 @@ class FileTracker(private val project: Project) {
 
     private inner class MyFileEditorManagerListener : FileEditorManagerListener {
         override fun selectionChanged(event: FileEditorManagerEvent) {
+            println("File selection changed: ${event.newFile?.name}")
             updateCurrentFile()
         }
     }
 
     private inner class MyDocumentListener : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
+            println("Document changed: ${event.document}")
             updateCurrentFile()
         }
     }
@@ -37,8 +40,11 @@ class FileTracker(private val project: Project) {
         val editor = FileEditorManager.getInstance(project).selectedTextEditor
         if (editor != null) {
             currentFile = editor.virtualFile
+            println("Current file updated: ${currentFile?.name}")
+            onFileChanged?.invoke() // 파일 변경 시 호출
         } else {
             currentFile = null
+            println("No current file selected.")
         }
     }
 
